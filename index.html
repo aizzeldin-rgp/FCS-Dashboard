@@ -186,46 +186,22 @@ window.addEventListener('load', function() {
       <div id="sp-signin-prompt">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFF6F0] mb-5">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#F05A28]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
-        <p class="text-lg font-semibold text-gray-700 mb-1">Connect to your SharePoint file</p>
-        <p class="text-sm text-gray-400 mb-5">Paste the sharing link for your CRM Excel file from SharePoint</p>
-
-        <!-- URL input -->
-        <div class="flex gap-2 mb-3">
-          <input id="sp-url-input" type="url"
-            placeholder="https://dawiyatdigital.sharepoint.com/:x:/s/..."
-            class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A28]"
-            style="min-width:0"/>
-          <button id="sp-url-load-btn"
-            onclick="(function(btn){
-              var url = document.getElementById('sp-url-input').value.trim();
-              if(!url){alert('Please paste the SharePoint link first.');return;}
-              btn.disabled=true;btn.style.opacity='0.7';
-              document.getElementById('sp-signin-prompt').classList.add('hidden');
-              document.getElementById('sp-loading-spinner').classList.remove('hidden');
-              document.getElementById('sp-loading-msg').innerText='Fetching file from SharePoint…';
-              loadFromURL(url);
-            })(this)"
-            class="px-4 py-2 bg-[#F05A28] hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-all whitespace-nowrap">
-            Load
-          </button>
-        </div>
-
-        <!-- How to get the link -->
-        <details class="text-left text-xs text-gray-500 mb-4 border border-gray-100 rounded-lg p-3 cursor-pointer">
-          <summary class="font-semibold text-gray-600 cursor-pointer">How to get the SharePoint link</summary>
-          <ol class="mt-2 space-y-1 list-decimal list-inside">
-            <li>Open SharePoint → <strong>Dashboard Data</strong> library</li>
-            <li>Right-click the Excel file → <strong>Share</strong></li>
-            <li>Set link to <strong>"Anyone with the link"</strong> → <strong>Can view</strong></li>
-            <li>Click <strong>Copy link</strong> and paste it above</li>
+        <p class="text-lg font-semibold text-gray-700 mb-1">No data file found</p>
+        <p class="text-sm text-gray-400 mb-5">Upload the CRM Excel to the GitHub repo so everyone sees the same live data</p>
+        <div class="text-left text-xs bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5">
+          <p class="font-semibold text-gray-700 mb-2">To publish data for your team:</p>
+          <ol class="space-y-1 list-decimal list-inside text-gray-500">
+            <li>Go to <strong>github.com/aizzeldin-rgp/FCS-Dashboard</strong></li>
+            <li>Open the <strong>data</strong> folder (create it if missing)</li>
+            <li>Upload your CRM Excel as <strong>report.xlsx</strong></li>
+            <li>Click <strong>Commit changes</strong></li>
           </ol>
-          <p class="mt-2 text-gray-400">The link is saved in your browser — paste once, loads every time.</p>
-        </details>
-
-        <div class="text-xs text-gray-400">— or —</div>
+          <p class="mt-2 text-gray-400">Once uploaded, everyone who opens the dashboard link sees the data — no sign-in needed. Re-upload <strong>report.xlsx</strong> whenever there's new CRM data.</p>
+        </div>
+        <div class="text-xs text-gray-400">— or preview with a local file —</div>
       </div>
       <!-- Loading spinner (shown after button click) -->
       <div id="sp-loading-spinner" class="hidden">
@@ -240,7 +216,7 @@ window.addEventListener('load', function() {
       </div>
       <div id="sp-load-error" class="mt-5 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 hidden"></div>
       <button id="sp-retry-btn" class="mt-4 hidden text-sm font-semibold text-white bg-[#F05A28] px-5 py-2 rounded-full hover:bg-orange-600" onclick="document.getElementById('sp-signin-prompt').classList.add('hidden'); document.getElementById('sp-loading-spinner').classList.remove('hidden'); document.getElementById('sp-load-error').classList.add('hidden'); document.getElementById('sp-retry-btn').classList.add('hidden'); loadFromSharePoint();">Retry</button>
-      <p class="mt-6 text-xs text-gray-400">— or upload a file manually —</p>
+      <p class="mt-4 text-xs text-gray-400">— or upload a file manually (saved in browser, auto-loads next time) —</p>
       <button id="sp-manual-btn" class="mt-2 text-xs text-gray-500 underline hover:text-gray-700" onclick="document.getElementById('sp-loading-state').classList.add('hidden'); document.getElementById('sp-manual-upload').classList.remove('hidden');">Upload file manually</button>
     </div>
     <!-- ── Manual upload fallback (hidden until needed) ── -->
@@ -2344,6 +2320,21 @@ function switchTab(tab) {
    - Dashboard renders automatically — no manual upload needed
    ─────────────────────────────────────────────────────────────
    ============================================================ */
+/* ══════════════════════════════════════════════════════════════
+   DATA SOURCE — paste your OneDrive sharing link here (one-time setup)
+   ──────────────────────────────────────────────────────────────
+   HOW TO GET THE LINK:
+   1. Open your personal OneDrive (onedrive.live.com)
+   2. Upload the CRM Excel file there
+   3. Right-click the file → Share → "Anyone with the link" → Can view → Copy link
+   4. Paste that link below (replace the empty string)
+
+   The Excel file stays on OneDrive — only this link is in the code.
+   When you update the file on OneDrive, the team's dashboard refreshes
+   automatically with the new data. No GitHub changes needed for data updates.
+   ══════════════════════════════════════════════════════════════ */
+const ONEDRIVE_URL = 'https://dawiyatdigital-my.sharepoint.com/:x:/p/aiahmed/IQCJLJQfyX5hQantsCg7iRdpAVl5ZfXQ4HgPHKbyBvyZnVM?e=7TJrep';
+
 const SP_CONFIG = {
   clientId:    '0f24741b-2a80-47ab-8349-66f51cabd758', // Azure AD App ID — do not change
   tenantId:    'dawiyatdigital.onmicrosoft.com',         // your Microsoft 365 tenant
@@ -2384,7 +2375,20 @@ async function getGraphToken(msalInst, redirectResult) {
 }
 
 /* ── Main auto-load function ── */
-// ─── Load from a SharePoint "Anyone with link" sharing URL ───────────────────
+// ─── Convert any OneDrive share URL to a direct download URL ─────────────────
+function toDownloadUrl(shareUrl) {
+  // OneDrive for Business / work OneDrive (*.sharepoint.com URLs):
+  // "Anyone with link" files support direct download by appending &download=1
+  if (shareUrl.includes('sharepoint.com') || shareUrl.includes('my.sharepoint.com')) {
+    return shareUrl.includes('?') ? shareUrl + '&download=1' : shareUrl + '?download=1';
+  }
+  // Personal OneDrive (1drv.ms, onedrive.live.com):
+  // Use the OneDrive shares API — works without auth for "Anyone with link"
+  const encoded = btoa(shareUrl).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return `https://api.onedrive.com/v1.0/shares/u!${encoded}/root/content`;
+}
+
+// ─── Load from OneDrive (or any direct URL) ───────────────────────────────────
 async function loadFromURL(rawUrl) {
   const errDiv    = document.getElementById('sp-load-error');
   const retryBtn  = document.getElementById('sp-retry-btn');
@@ -2393,11 +2397,10 @@ async function loadFromURL(rawUrl) {
   retryBtn.classList.add('hidden');
 
   try {
-    // Convert share URL to a direct download URL.
-    // SharePoint share links: append &download=1 (or ?download=1 if no query yet)
-    let downloadUrl = rawUrl.includes('?') ? rawUrl + '&download=1' : rawUrl + '?download=1';
+    // Convert OneDrive share URL to a direct download via the shares API (no auth needed)
+    const downloadUrl = toDownloadUrl(rawUrl);
 
-    document.getElementById('sp-loading-msg').innerText = 'Downloading Excel from SharePoint…';
+    document.getElementById('sp-loading-msg').innerText = 'Fetching Excel from OneDrive…';
     const resp = await fetch(downloadUrl, { mode: 'cors', credentials: 'omit' });
     if (!resp.ok) throw new Error(`Download failed (HTTP ${resp.status}). Check that the link is set to "Anyone with the link – Can view".`);
 
@@ -2423,9 +2426,9 @@ async function loadFromURL(rawUrl) {
     document.getElementById('sp-loading-spinner').classList.add('hidden');
     document.getElementById('sp-url-load-btn').disabled = false;
     document.getElementById('sp-url-load-btn').style.opacity = '1';
-    // If CORS blocked, explain
-    if (err.name === 'TypeError' && err.message.toLowerCase().includes('fetch')) {
-      errDiv.innerText = '⚠ Could not reach SharePoint (network or CORS). Try setting the share link to "Anyone with the link – Can view" and try again. If this persists, use "Upload file manually" below.';
+    // If CORS / network blocked, explain
+    if (err.name === 'TypeError' || err.message.includes('fetch')) {
+      errDiv.innerText = '⚠ Could not download the file. Make sure the OneDrive link is set to "Anyone – Can view" and try again. If it still fails, use "Upload file manually" below.';
     }
   }
 }
@@ -2520,6 +2523,36 @@ function showError(msg) {
 }
 function clearError() { document.getElementById('upload-error').classList.add('hidden'); }
 
+function saveToLocalStorage(arrayBuffer, fileName) {
+  try {
+    // Convert ArrayBuffer to base64 for localStorage storage
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    const b64 = btoa(binary);
+    localStorage.setItem('fcs_file_b64', b64);
+    localStorage.setItem('fcs_file_name', fileName);
+    localStorage.setItem('fcs_file_date', new Date().toISOString());
+  } catch(e) { /* storage full or unavailable — skip silently */ }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const b64 = localStorage.getItem('fcs_file_b64');
+    const name = localStorage.getItem('fcs_file_name') || 'saved file';
+    const date = localStorage.getItem('fcs_file_date');
+    if (!b64) return false;
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    handleArrayBuffer(bytes.buffer, name + (date ? ' (saved ' + new Date(date).toLocaleDateString() + ')' : ''));
+    return true;
+  } catch(e) { return false; }
+}
+
 function handleArrayBuffer(arrayBuffer, fileName) {
   clearError();
   try {
@@ -2556,6 +2589,9 @@ function handleArrayBuffer(arrayBuffer, fileName) {
       document.getElementById('standard-panel').classList.remove('hidden');
       document.getElementById('compliance-panel').classList.add('hidden');
       refreshFilterPanels();
+
+      // Save to localStorage so next visit auto-loads without re-uploading
+      saveToLocalStorage(arrayBuffer, fileName);
 
       // Only swap screens once data is fully parsed and normalized successfully.
       const data = computeCurrentTabData();
@@ -2633,13 +2669,33 @@ window.addEventListener('DOMContentLoaded', () => {
     if (e.target.closest('#regenerate-brief-btn')) renderExecutiveBrief(computeCurrentTabData(), true);
   });
 
-  // "Refresh Data" button — re-pull the latest file from SharePoint
-  document.getElementById('refresh-sp-btn').addEventListener('click', () => {
+  // "Refresh Data" button — re-fetch data/report.xlsx from the repo
+  document.getElementById('refresh-sp-btn').addEventListener('click', async () => {
     document.getElementById('dashboard-screen').classList.add('hidden');
     document.getElementById('sp-loading-state').classList.remove('hidden');
     document.getElementById('sp-manual-upload').classList.add('hidden');
+    document.getElementById('sp-signin-prompt').classList.add('hidden');
+    document.getElementById('sp-loading-spinner').classList.remove('hidden');
     document.getElementById('upload-screen').classList.remove('hidden');
-    loadFromSharePoint();
+    document.getElementById('sp-loading-msg').innerText = 'Refreshing latest data…';
+    try {
+      if (ONEDRIVE_URL && ONEDRIVE_URL.trim()) {
+        await loadFromURL(ONEDRIVE_URL.trim());
+      } else {
+        const resp = await fetch('./data/report.xlsx', { cache: 'no-store' });
+        if (!resp.ok) throw new Error('not_found');
+        const ab = await resp.arrayBuffer();
+        const wb = XLSX.read(ab, { type: 'array', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rawData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        processData(rawData);
+        document.getElementById('upload-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+      }
+    } catch(e) {
+      document.getElementById('sp-signin-prompt').classList.remove('hidden');
+      document.getElementById('sp-loading-spinner').classList.add('hidden');
+    }
   });
 
   // "Upload File" fallback button
@@ -2652,31 +2708,43 @@ window.addEventListener('DOMContentLoaded', () => {
     fileInput.value = '';
   });
 
-  // Auto-load: if MSAL is available and clientId is configured, always try to auto-load.
-  // This works whether the file is hosted on GitHub Pages, Azure, or any web server.
-  // If clientId is not yet configured, fall back to manual upload.
-  // On page load: check if we're returning from a Microsoft redirect login.
-  // If so, auto-start loading (skip showing the sign-in button).
-  // Otherwise, show the sign-in button.
+  // Auto-load priority:
+  // 1. ONEDRIVE_URL is set → fetch from OneDrive (everyone sees same live data, no sign-in)
+  // 2. data/report.xlsx exists in the repo → fetch from there
+  // 3. Show setup instructions
   document.getElementById('sp-loading-state').classList.remove('hidden');
   document.getElementById('sp-manual-upload').classList.add('hidden');
   (async () => {
+    document.getElementById('sp-signin-prompt').classList.add('hidden');
+    document.getElementById('sp-loading-spinner').classList.remove('hidden');
+    document.getElementById('sp-loading-msg').innerText = 'Loading dashboard data…';
+
+    // Priority 1: OneDrive URL configured → fetch latest Excel from OneDrive
+    if (ONEDRIVE_URL && ONEDRIVE_URL.trim()) {
+      try {
+        await loadFromURL(ONEDRIVE_URL.trim());
+        return;
+      } catch(e) { console.warn('OneDrive load failed:', e); }
+    }
+
+    // Priority 2: data/report.xlsx in the repo (same-origin fetch, no auth, no CORS)
     try {
-      const msalInst = getMsalInstance();
-      if (msalInst) {
-        await msalInst.initialize();
-        const redirectResult = await msalInst.handleRedirectPromise().catch(() => null);
-        if (redirectResult) {
-          // We just came back from Microsoft sign-in redirect — auto-load
-          document.getElementById('sp-signin-prompt').classList.add('hidden');
-          document.getElementById('sp-loading-spinner').classList.remove('hidden');
-          document.getElementById('sp-loading-msg').innerText = 'Loading data from SharePoint…';
-          loadFromSharePoint();
+      const resp = await fetch('./data/report.xlsx', { cache: 'no-store' });
+      if (resp.ok) {
+        const ab = await resp.arrayBuffer();
+        const wb = XLSX.read(ab, { type: 'array', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rawData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        if (rawData.length) {
+          processData(rawData);
+          document.getElementById('upload-screen').classList.add('hidden');
+          document.getElementById('dashboard-screen').classList.remove('hidden');
           return;
         }
       }
-    } catch(e) {}
-    // Default: show the sign-in button
+    } catch(e) { /* repo data file not found */ }
+
+    // No data source configured — show setup instructions
     document.getElementById('sp-signin-prompt').classList.remove('hidden');
     document.getElementById('sp-loading-spinner').classList.add('hidden');
   })();
