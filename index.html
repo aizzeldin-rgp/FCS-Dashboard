@@ -192,7 +192,7 @@ window.addEventListener('load', function() {
         <p class="text-lg font-semibold text-gray-700 mb-1">Sign in to load the dashboard</p>
         <p class="text-sm text-gray-400 mb-6">Data is fetched automatically from SharePoint after sign-in</p>
         <button id="sp-signin-btn"
-          onclick="(function(btn){btn.disabled=true;btn.style.opacity='0.7';var attempts=20;var wait=function(){if(typeof msal!=='undefined'){document.getElementById('sp-signin-prompt').classList.add('hidden');document.getElementById('sp-loading-spinner').classList.remove('hidden');loadFromSharePoint();}else if(attempts-->0){document.getElementById('sp-loading-msg').textContent='Loading Microsoft sign-in library…';setTimeout(wait,500);}else{btn.disabled=false;btn.style.opacity='1';alert('Microsoft sign-in library failed to load. Your network may be blocking cdn.jsdelivr.net — please try the manual upload link below.');}};wait();})(this)"
+          onclick="(function(btn){btn.disabled=true;btn.style.opacity='0.7';document.getElementById('sp-signin-prompt').classList.add('hidden');document.getElementById('sp-loading-spinner').classList.remove('hidden');document.getElementById('sp-loading-msg').innerText='Connecting to Microsoft 365…';loadFromSharePoint();})(this)"
           class="inline-flex items-center gap-3 px-6 py-3 bg-[#F05A28] hover:bg-orange-600 text-white font-semibold rounded-full shadow-md transition-all">
           <!-- Microsoft logo -->
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 21 21">
@@ -2347,14 +2347,18 @@ function getMsalInstance() {
   return _msalInstance;
 }
 
-async function getGraphToken(msalInst) {
+async function getGraphToken(msalInst, redirectResult) {
   const scopes   = ['https://graph.microsoft.com/Sites.Read.All'];
+  // If we just came back from a redirect login, use that token directly
+  if (redirectResult && redirectResult.accessToken) return redirectResult.accessToken;
   const accounts = msalInst.getAllAccounts();
   const request  = { scopes, account: accounts[0] || undefined };
   if (accounts.length > 0) {
     try { return (await msalInst.acquireTokenSilent(request)).accessToken; } catch(e) {}
   }
-  return (await msalInst.acquireTokenPopup(request)).accessToken;
+  // Use redirect flow — no popup needed (works even when popups are blocked)
+  await msalInst.loginRedirect({ scopes });
+  return null; // page will navigate away; execution stops here
 }
 
 /* ── Main auto-load function ── */
@@ -2374,11 +2378,13 @@ async function loadFromSharePoint() {
     const msalInst = getMsalInstance();
     if (!msalInst) throw new Error('Azure AD Client ID not configured. Open the HTML file and fill in SP_CONFIG.clientId (see setup steps in the comments).');
 
-    await msalInst.initialize();
-    await msalInst.handleRedirectPromise().catch(() => {});
+    try { await msalInst.initialize(); } catch(e) { /* already initialized */ }
+    // Handle redirect response — if we just came back from Microsoft login, this returns the auth result
+    const redirectResult = await msalInst.handleRedirectPromise().catch(() => null);
 
-    // 1. Acquire Graph API access token (silent if already signed in, popup otherwise)
-    const token = await getGraphToken(msalInst);
+    // 1. Acquire Graph API access token (uses redirect result, silent cache, or triggers new redirect)
+    const token = await getGraphToken(msalInst, redirectResult);
+    if (!token) return; // loginRedirect() was called — page is navigating away
 
     // 2. Resolve SharePoint site ID
     document.getElementById('sp-loading-msg').innerText = 'Connecting to SharePoint…';
@@ -2581,12 +2587,31 @@ window.addEventListener('DOMContentLoaded', () => {
   // Auto-load: if MSAL is available and clientId is configured, always try to auto-load.
   // This works whether the file is hosted on GitHub Pages, Azure, or any web server.
   // If clientId is not yet configured, fall back to manual upload.
-  // Always show the sign-in button — MSAL loads asynchronously so we never gate on typeof msal here.
-  // The button click handler will check MSAL availability at click time (after scripts have loaded).
+  // On page load: check if we're returning from a Microsoft redirect login.
+  // If so, auto-start loading (skip showing the sign-in button).
+  // Otherwise, show the sign-in button.
   document.getElementById('sp-loading-state').classList.remove('hidden');
-  document.getElementById('sp-signin-prompt').classList.remove('hidden');
-  document.getElementById('sp-loading-spinner').classList.add('hidden');
   document.getElementById('sp-manual-upload').classList.add('hidden');
+  (async () => {
+    try {
+      const msalInst = getMsalInstance();
+      if (msalInst) {
+        await msalInst.initialize();
+        const redirectResult = await msalInst.handleRedirectPromise().catch(() => null);
+        if (redirectResult) {
+          // We just came back from Microsoft sign-in redirect — auto-load
+          document.getElementById('sp-signin-prompt').classList.add('hidden');
+          document.getElementById('sp-loading-spinner').classList.remove('hidden');
+          document.getElementById('sp-loading-msg').innerText = 'Loading data from SharePoint…';
+          loadFromSharePoint();
+          return;
+        }
+      }
+    } catch(e) {}
+    // Default: show the sign-in button
+    document.getElementById('sp-signin-prompt').classList.remove('hidden');
+    document.getElementById('sp-loading-spinner').classList.add('hidden');
+  })();
 
   document.querySelectorAll('.filter-toggle').forEach(btn => {
     btn.addEventListener('click', () => {
