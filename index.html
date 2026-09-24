@@ -2334,6 +2334,7 @@ function switchTab(tab) {
    automatically with the new data. No GitHub changes needed for data updates.
    ══════════════════════════════════════════════════════════════ */
 const ONEDRIVE_URL = 'https://dawiyatdigital-my.sharepoint.com/:x:/p/aiahmed/IQCJLJQfyX5hQantsCg7iRdpAVl5ZfXQ4HgPHKbyBvyZnVM?e=7TJrep';
+const PROXY_URL    = 'https://fcs-proxy.a-izzeldin91.workers.dev/';
 
 const SP_CONFIG = {
   clientId:    '0f24741b-2a80-47ab-8349-66f51cabd758', // Azure AD App ID — do not change
@@ -2397,8 +2398,8 @@ async function loadFromURL(rawUrl) {
   retryBtn.classList.add('hidden');
 
   try {
-    // Convert OneDrive share URL to a direct download via the shares API (no auth needed)
-    const downloadUrl = toDownloadUrl(rawUrl);
+    // Use Cloudflare proxy to bypass CORS (proxy fetches OneDrive server-side)
+    const downloadUrl = PROXY_URL;
 
     document.getElementById('sp-loading-msg').innerText = 'Fetching Excel from OneDrive…';
     const resp = await fetch(downloadUrl, { mode: 'cors', credentials: 'omit' });
