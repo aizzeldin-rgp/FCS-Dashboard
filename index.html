@@ -113,16 +113,42 @@ window.addEventListener('load', function() {
 <div id="upload-screen" class="min-h-screen flex items-center justify-center px-4">
     <!-- ── SharePoint auto-load state (shown first) ── -->
     <div id="sp-loading-state" class="w-full max-w-md text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFF6F0] mb-5">
-        <svg class="animate-spin h-8 w-8 text-[#F05A28]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-        </svg>
+      <!-- Sign-in prompt (shown initially) -->
+      <div id="sp-signin-prompt">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFF6F0] mb-5">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#F05A28]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <p class="text-lg font-semibold text-gray-700 mb-1">Sign in to load the dashboard</p>
+        <p class="text-sm text-gray-400 mb-6">Data is fetched automatically from SharePoint after sign-in</p>
+        <button id="sp-signin-btn"
+          onclick="document.getElementById('sp-signin-prompt').classList.add('hidden'); document.getElementById('sp-loading-spinner').classList.remove('hidden'); loadFromSharePoint();"
+          class="inline-flex items-center gap-3 px-6 py-3 bg-[#F05A28] hover:bg-orange-600 text-white font-semibold rounded-full shadow-md transition-all">
+          <!-- Microsoft logo -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 21 21">
+            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+          Sign in with Microsoft 365
+        </button>
+        <p class="mt-4 text-xs text-gray-400">Uses your Dawiyat Microsoft account — no password re-entry if already signed in</p>
       </div>
-      <p class="text-lg font-semibold text-gray-700" id="sp-loading-msg">Loading data from SharePoint…</p>
-      <p class="text-sm text-gray-400 mt-1">Fetching the latest CRM export from <strong>Dashboard Data</strong></p>
+      <!-- Loading spinner (shown after button click) -->
+      <div id="sp-loading-spinner" class="hidden">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFF6F0] mb-5">
+          <svg class="animate-spin h-8 w-8 text-[#F05A28]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+        </div>
+        <p class="text-lg font-semibold text-gray-700" id="sp-loading-msg">Signing in to Microsoft 365…</p>
+        <p class="text-sm text-gray-400 mt-1">Fetching the latest CRM export from <strong>Dashboard Data</strong></p>
+      </div>
       <div id="sp-load-error" class="mt-5 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 hidden"></div>
-      <button id="sp-retry-btn" class="mt-4 hidden text-sm font-semibold text-white bg-[#F05A28] px-5 py-2 rounded-full hover:bg-orange-600" onclick="loadFromSharePoint()">Retry</button>
+      <button id="sp-retry-btn" class="mt-4 hidden text-sm font-semibold text-white bg-[#F05A28] px-5 py-2 rounded-full hover:bg-orange-600" onclick="document.getElementById('sp-signin-prompt').classList.add('hidden'); document.getElementById('sp-loading-spinner').classList.remove('hidden'); document.getElementById('sp-load-error').classList.add('hidden'); document.getElementById('sp-retry-btn').classList.add('hidden'); loadFromSharePoint();">Retry</button>
       <p class="mt-6 text-xs text-gray-400">— or upload a file manually —</p>
       <button id="sp-manual-btn" class="mt-2 text-xs text-gray-500 underline hover:text-gray-700" onclick="document.getElementById('sp-loading-state').classList.add('hidden'); document.getElementById('sp-manual-upload').classList.remove('hidden');">Upload file manually</button>
     </div>
@@ -2336,10 +2362,9 @@ async function loadFromSharePoint() {
       `<span class="text-xs mt-1 block">You can upload the file manually below, or retry once the issue is resolved.</span>`;
     errDiv.classList.remove('hidden');
     retryBtn.classList.remove('hidden');
-    setTimeout(() => {
-      loadingState.classList.add('hidden');
-      manualDiv.classList.remove('hidden');
-    }, 3000);
+    // Show spinner hidden, sign-in prompt visible again so user can retry
+    document.getElementById('sp-loading-spinner').classList.add('hidden');
+    document.getElementById('sp-signin-prompt').classList.remove('hidden');
   }
 }
 
@@ -2489,7 +2514,11 @@ window.addEventListener('DOMContentLoaded', () => {
   // If clientId is not yet configured, fall back to manual upload.
   const msalReady = typeof msal !== 'undefined' && SP_CONFIG.clientId !== 'YOUR-CLIENT-ID-HERE';
   if (msalReady) {
-    loadFromSharePoint();
+    // Show sign-in button — popup must be triggered by user click, not auto (browsers block auto-popups)
+    document.getElementById('sp-loading-state').classList.remove('hidden');
+    document.getElementById('sp-signin-prompt').classList.remove('hidden');
+    document.getElementById('sp-loading-spinner').classList.add('hidden');
+    document.getElementById('sp-manual-upload').classList.add('hidden');
   } else {
     document.getElementById('sp-loading-state').classList.add('hidden');
     document.getElementById('sp-manual-upload').classList.remove('hidden');
