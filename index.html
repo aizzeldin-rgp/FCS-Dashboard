@@ -186,24 +186,46 @@ window.addEventListener('load', function() {
       <div id="sp-signin-prompt">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFF6F0] mb-5">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#F05A28]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
         </div>
-        <p class="text-lg font-semibold text-gray-700 mb-1">Sign in to load the dashboard</p>
-        <p class="text-sm text-gray-400 mb-6">Data is fetched automatically from SharePoint after sign-in</p>
-        <button id="sp-signin-btn"
-          onclick="(function(btn){btn.disabled=true;btn.style.opacity='0.7';document.getElementById('sp-signin-prompt').classList.add('hidden');document.getElementById('sp-loading-spinner').classList.remove('hidden');document.getElementById('sp-loading-msg').innerText='Connecting to Microsoft 365…';loadFromSharePoint();})(this)"
-          class="inline-flex items-center gap-3 px-6 py-3 bg-[#F05A28] hover:bg-orange-600 text-white font-semibold rounded-full shadow-md transition-all">
-          <!-- Microsoft logo -->
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 21 21">
-            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-          </svg>
-          Sign in with Microsoft 365
-        </button>
-        <p class="mt-4 text-xs text-gray-400">Uses your Dawiyat Microsoft account — no password re-entry if already signed in</p>
+        <p class="text-lg font-semibold text-gray-700 mb-1">Connect to your SharePoint file</p>
+        <p class="text-sm text-gray-400 mb-5">Paste the sharing link for your CRM Excel file from SharePoint</p>
+
+        <!-- URL input -->
+        <div class="flex gap-2 mb-3">
+          <input id="sp-url-input" type="url"
+            placeholder="https://dawiyatdigital.sharepoint.com/:x:/s/..."
+            class="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A28]"
+            style="min-width:0"/>
+          <button id="sp-url-load-btn"
+            onclick="(function(btn){
+              var url = document.getElementById('sp-url-input').value.trim();
+              if(!url){alert('Please paste the SharePoint link first.');return;}
+              btn.disabled=true;btn.style.opacity='0.7';
+              document.getElementById('sp-signin-prompt').classList.add('hidden');
+              document.getElementById('sp-loading-spinner').classList.remove('hidden');
+              document.getElementById('sp-loading-msg').innerText='Fetching file from SharePoint…';
+              loadFromURL(url);
+            })(this)"
+            class="px-4 py-2 bg-[#F05A28] hover:bg-orange-600 text-white font-semibold rounded-lg text-sm transition-all whitespace-nowrap">
+            Load
+          </button>
+        </div>
+
+        <!-- How to get the link -->
+        <details class="text-left text-xs text-gray-500 mb-4 border border-gray-100 rounded-lg p-3 cursor-pointer">
+          <summary class="font-semibold text-gray-600 cursor-pointer">How to get the SharePoint link</summary>
+          <ol class="mt-2 space-y-1 list-decimal list-inside">
+            <li>Open SharePoint → <strong>Dashboard Data</strong> library</li>
+            <li>Right-click the Excel file → <strong>Share</strong></li>
+            <li>Set link to <strong>"Anyone with the link"</strong> → <strong>Can view</strong></li>
+            <li>Click <strong>Copy link</strong> and paste it above</li>
+          </ol>
+          <p class="mt-2 text-gray-400">The link is saved in your browser — paste once, loads every time.</p>
+        </details>
+
+        <div class="text-xs text-gray-400">— or —</div>
       </div>
       <!-- Loading spinner (shown after button click) -->
       <div id="sp-loading-spinner" class="hidden">
@@ -2362,6 +2384,52 @@ async function getGraphToken(msalInst, redirectResult) {
 }
 
 /* ── Main auto-load function ── */
+// ─── Load from a SharePoint "Anyone with link" sharing URL ───────────────────
+async function loadFromURL(rawUrl) {
+  const errDiv    = document.getElementById('sp-load-error');
+  const retryBtn  = document.getElementById('sp-retry-btn');
+  const signinDiv = document.getElementById('sp-signin-prompt');
+  errDiv.classList.add('hidden');
+  retryBtn.classList.add('hidden');
+
+  try {
+    // Convert share URL to a direct download URL.
+    // SharePoint share links: append &download=1 (or ?download=1 if no query yet)
+    let downloadUrl = rawUrl.includes('?') ? rawUrl + '&download=1' : rawUrl + '?download=1';
+
+    document.getElementById('sp-loading-msg').innerText = 'Downloading Excel from SharePoint…';
+    const resp = await fetch(downloadUrl, { mode: 'cors', credentials: 'omit' });
+    if (!resp.ok) throw new Error(`Download failed (HTTP ${resp.status}). Check that the link is set to "Anyone with the link – Can view".`);
+
+    const ab = await resp.arrayBuffer();
+    const wb = XLSX.read(ab, { type: 'array', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rawData = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    if (!rawData.length) throw new Error('The Excel file appears to be empty.');
+
+    // Save URL for auto-load next time
+    try { localStorage.setItem('sp_share_url', rawUrl); } catch(e) {}
+
+    document.getElementById('sp-loading-msg').innerText = 'Processing data…';
+    processData(rawData);
+    document.getElementById('upload-screen').classList.add('hidden');
+    document.getElementById('dashboard-screen').classList.remove('hidden');
+  } catch(err) {
+    console.error('loadFromURL error:', err);
+    errDiv.innerText = '⚠ ' + err.message;
+    errDiv.classList.remove('hidden');
+    retryBtn.classList.add('hidden');
+    signinDiv.classList.remove('hidden');
+    document.getElementById('sp-loading-spinner').classList.add('hidden');
+    document.getElementById('sp-url-load-btn').disabled = false;
+    document.getElementById('sp-url-load-btn').style.opacity = '1';
+    // If CORS blocked, explain
+    if (err.name === 'TypeError' && err.message.toLowerCase().includes('fetch')) {
+      errDiv.innerText = '⚠ Could not reach SharePoint (network or CORS). Try setting the share link to "Anyone with the link – Can view" and try again. If this persists, use "Upload file manually" below.';
+    }
+  }
+}
+
 async function loadFromSharePoint() {
   const loadingState = document.getElementById('sp-loading-state');
   const errDiv       = document.getElementById('sp-load-error');
