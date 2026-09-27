@@ -177,6 +177,15 @@ window.addEventListener('load', function() {
     h1 { font-size: 20px !important; }
     .relative.h-96, .relative.h-\[450px\], .relative.h-80 { height: 260px !important; }
   }
+  /* ---------- loading screen steps ---------- */
+  .sp-step{display:flex;align-items:center;gap:8px;color:#9CA3AF;padding:3px 0}
+  .sp-step::before{content:"";flex:none;width:14px;height:14px;border-radius:9999px;border:2px solid #E5E7EB;background:#fff;box-sizing:border-box}
+  .sp-step.active{color:#1F2937;font-weight:600}
+  .sp-step.active::before{border-color:#F05A28;background:#FFF1EA}
+  .sp-step.done{color:#6B7280}
+  .sp-step.done::before{border-color:#F05A28;background:#F05A28 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/10px no-repeat}
+  @keyframes spIndet{0%{margin-left:-35%}100%{margin-left:100%}}
+  #sp-progress.indeterminate #sp-progress-bar{width:35%!important;animation:spIndet 1.2s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -185,18 +194,47 @@ window.addEventListener('load', function() {
 <div id="upload-screen" class="min-h-screen flex items-center justify-center px-4">
     <!-- ── SharePoint auto-load state (shown first) ── -->
     <div id="sp-loading-state" class="w-full max-w-md text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#FFF6F0] mb-5">
-        <svg class="animate-spin h-8 w-8 text-[#F05A28]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-        </svg>
+      <!-- Branding (logo image is copied from the upload screen at runtime to avoid duplicating it) -->
+      <img id="sp-loading-logo" alt="Integrated Dawiyat" style="height:64px;width:auto;margin:0 auto 12px;display:block" class="hidden">
+      <span class="font-black text-2xl tracking-tight text-gray-900 font-arabic block">Integrated Dawiyat</span>
+      <p class="text-sm font-bold text-dawiyat-midGrey uppercase tracking-wider mt-1">FCS Performance Dashboard</p>
+
+      <div id="sp-loading-card" class="rounded-2xl bg-white shadow-card mt-8 p-6 text-left" style="border:1px solid #F3F4F6">
+        <div class="flex items-center gap-3">
+          <svg id="sp-loading-spinner" class="animate-spin h-5 w-5 text-[#F05A28]" style="flex:none" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+          </svg>
+          <p class="font-semibold text-gray-800" id="sp-loading-msg">Loading the latest data…</p>
+        </div>
+        <p class="text-xs text-gray-400 mt-1" id="sp-loading-sub">Fetching the latest CRM export</p>
+
+        <!-- Progress bar -->
+        <div id="sp-progress" style="margin-top:16px;height:6px;border-radius:9999px;background:#FFF1EA;overflow:hidden;position:relative">
+          <div id="sp-progress-bar" style="height:100%;width:4%;border-radius:9999px;background:#F05A28;transition:width .25s ease"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mt-2">
+          <span id="sp-progress-label">Starting…</span>
+          <span id="sp-progress-pct"></span>
+        </div>
+
+        <!-- Steps -->
+        <ol id="sp-steps" class="mt-4 text-sm" style="list-style:none;padding:0;margin-bottom:0">
+          <li data-step="connect" class="sp-step">Connecting to OneDrive</li>
+          <li data-step="download" class="sp-step">Downloading the CRM export</li>
+          <li data-step="prepare" class="sp-step">Preparing the dashboard</li>
+        </ol>
+
+        <div id="sp-load-error" class="mt-4 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 hidden"></div>
+        <div id="sp-error-actions" class="mt-4 hidden" style="display:none;gap:8px;flex-wrap:wrap">
+          <button id="sp-retry-btn" class="text-sm font-semibold text-white bg-[#F05A28] px-5 py-2 rounded-full hover:bg-orange-600" onclick="autoLoadData(true)">Try again</button>
+          <button class="text-sm font-semibold text-gray-600 px-5 py-2 rounded-full border border-gray-200 hover:bg-gray-50" onclick="showManualUpload()">Upload file manually</button>
+        </div>
       </div>
-      <p class="text-lg font-semibold text-gray-700" id="sp-loading-msg">Loading data from SharePoint…</p>
-      <p class="text-sm text-gray-400 mt-1">Fetching the latest CRM export from <strong>Dashboard Data</strong></p>
-      <div id="sp-load-error" class="mt-5 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 hidden"></div>
-      <button id="sp-retry-btn" class="mt-4 hidden text-sm font-semibold text-white bg-[#F05A28] px-5 py-2 rounded-full hover:bg-orange-600" onclick="autoLoadData()">Retry</button>
-      <p class="mt-6 text-xs text-gray-400">— or upload a file manually —</p>
-      <button id="sp-manual-btn" class="mt-2 text-xs text-gray-500 underline hover:text-gray-700" onclick="document.getElementById('sp-loading-state').classList.add('hidden'); document.getElementById('sp-manual-upload').classList.remove('hidden');">Upload file manually</button>
+
+      <!-- Only offered if loading is unusually slow -->
+      <p id="sp-slow-hint" class="mt-5 text-xs text-gray-400 hidden">Taking longer than usual… <button class="underline hover:text-gray-600" onclick="showManualUpload()">upload a file manually</button> instead</p>
+      <p class="text-xs text-gray-400 mt-6">All rights reserved &copy; Dawiyat 2026</p>
     </div>
     <!-- ── Manual upload fallback (hidden until needed) ── -->
     <div id="sp-manual-upload" class="w-full max-w-md hidden">
@@ -3003,6 +3041,7 @@ async function loadFromSharePoint() {
       `<span class="text-xs mt-1 block">You can upload the file manually below, or retry once the issue is resolved.</span>`;
     errDiv.classList.remove('hidden');
     retryBtn.classList.remove('hidden');
+    const spActs = document.getElementById('sp-error-actions'); if (spActs) { spActs.classList.remove('hidden'); spActs.style.display = 'flex'; }
     // Show manual fallback automatically after SP failure
     setTimeout(() => {
       loadingState.classList.add('hidden');
@@ -3018,25 +3057,89 @@ async function loadFromSharePoint() {
    ============================================================ */
 const ONEDRIVE_PROXY_URL = 'https://fcs-proxy.a-izzeldin91.workers.dev/';
 
+function showManualUpload() {
+  document.getElementById('sp-loading-state').classList.add('hidden');
+  document.getElementById('sp-manual-upload').classList.remove('hidden');
+}
+
+// Loading-screen helpers: step list, progress bar and friendly status text
+function spSetStep(step) {
+  const order = ['connect', 'download', 'prepare'];
+  const idx = order.indexOf(step);
+  document.querySelectorAll('#sp-steps .sp-step').forEach(li => {
+    const i = order.indexOf(li.dataset.step);
+    li.classList.toggle('done', idx === -1 ? true : i < idx);
+    li.classList.toggle('active', i === idx);
+  });
+}
+function spSetProgress(fraction, label) {
+  const wrap = document.getElementById('sp-progress'), bar = document.getElementById('sp-progress-bar');
+  const pct = document.getElementById('sp-progress-pct');
+  if (fraction == null) { wrap.classList.add('indeterminate'); pct.innerText = ''; }
+  else {
+    wrap.classList.remove('indeterminate');
+    const p = Math.max(0, Math.min(1, fraction));
+    bar.style.width = (p * 100).toFixed(0) + '%';
+    pct.innerText = Math.round(p * 100) + '%';
+  }
+  if (label != null) document.getElementById('sp-progress-label').innerText = label;
+}
+const spNextPaint = () => new Promise(r => requestAnimationFrame(() => setTimeout(r, 30)));
+
 async function loadFromOneDrive(forceFresh) {
   const loadingState = document.getElementById('sp-loading-state');
   const errDiv       = document.getElementById('sp-load-error');
-  const retryBtn     = document.getElementById('sp-retry-btn');
+  const errActions   = document.getElementById('sp-error-actions');
   const manualDiv    = document.getElementById('sp-manual-upload');
   const msg          = document.getElementById('sp-loading-msg');
-  const sub          = msg.nextElementSibling;
+  const sub          = document.getElementById('sp-loading-sub');
+  const spinner      = document.getElementById('sp-loading-spinner');
+  const slowHint     = document.getElementById('sp-slow-hint');
+  const progressEls  = [document.getElementById('sp-progress'), document.getElementById('sp-progress-label').parentElement, document.getElementById('sp-steps')];
 
+  // Reset to the normal loading state
   errDiv.classList.add('hidden');
-  retryBtn.classList.add('hidden');
+  errActions.classList.add('hidden'); errActions.style.display = 'none';
+  slowHint.classList.add('hidden');
+  spinner.classList.remove('hidden');
+  progressEls.forEach(el => el.classList.remove('hidden'));
   loadingState.classList.remove('hidden');
   manualDiv.classList.add('hidden');
-  msg.innerText = 'Loading data from OneDrive…';
-  if (sub) sub.innerHTML = 'Fetching the latest CRM export from <strong>OneDrive</strong>';
+  msg.innerText = 'Loading the latest data…';
+  sub.innerText = 'Fetching the latest CRM export';
+  spSetStep('connect');
+  spSetProgress(0.03, 'Connecting…');
+
+  // Offer the manual upload only if loading is unusually slow
+  const slowTimer = setTimeout(() => slowHint.classList.remove('hidden'), 20000);
 
   try {
     const url = ONEDRIVE_PROXY_URL + (forceFresh ? '?nocache=1&t=' + Date.now() : '');
     const resp = await fetch(url, { cache: 'no-store' });
-    const buf = await resp.arrayBuffer();
+
+    // Download with live progress (falls back to an animated bar if size is unknown)
+    spSetStep('download');
+    const total = +resp.headers.get('Content-Length') || 0;
+    let buf;
+    if (resp.body && resp.body.getReader) {
+      const reader = resp.body.getReader();
+      const chunks = []; let received = 0;
+      if (!total) spSetProgress(null, 'Downloading…');
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value); received += value.length;
+        const mb = (received / 1048576).toFixed(1);
+        if (total) spSetProgress(0.05 + 0.8 * (received / total), 'Downloading ' + mb + ' of ' + (total / 1048576).toFixed(1) + ' MB');
+        else spSetProgress(null, 'Downloading ' + mb + ' MB');
+      }
+      const all = new Uint8Array(received); let off = 0;
+      for (const c of chunks) { all.set(c, off); off += c.length; }
+      buf = all.buffer;
+    } else {
+      spSetProgress(null, 'Downloading…');
+      buf = await resp.arrayBuffer();
+    }
 
     // A real .xlsx is a ZIP file: it must start with "PK\x03\x04".
     const b = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
@@ -3045,32 +3148,38 @@ async function loadFromOneDrive(forceFresh) {
       let detail = 'HTTP ' + resp.status;
       try {
         const j = JSON.parse(new TextDecoder().decode(buf));
-        detail = (j.error || detail) + (j.details ? '<br><span class="text-xs">' + j.details.join('<br>') + '</span>' : '');
+        detail = (j.error || detail) + (j.details ? ' — ' + j.details.join(' | ') : '');
       } catch (_) { detail += ' — the proxy returned a page instead of the Excel file.'; }
       throw new Error(detail);
     }
 
     const name = decodeURIComponent(resp.headers.get('X-File-Name') || 'CRM export.xlsx');
-    msg.innerText = 'Parsing ' + name + '…';
+    spSetStep('prepare');
+    spSetProgress(0.9, 'Preparing the dashboard…');
+    msg.innerText = 'Almost ready…';
+    await spNextPaint();   // let the browser show the last step before the heavy parsing starts
+    clearTimeout(slowTimer);
     handleArrayBuffer(buf, name);
+    spSetStep('finished'); spSetProgress(1, 'Done');
 
     // If parsing failed (e.g. missing columns), handleArrayBuffer shows the error
-    // in the manual-upload panel — reveal it instead of leaving the spinner up.
-    if (!document.getElementById('upload-screen').classList.contains('hidden')) {
-      loadingState.classList.add('hidden');
-      manualDiv.classList.remove('hidden');
-    }
+    // in the manual-upload panel — reveal it instead of leaving the loader up.
+    if (!document.getElementById('upload-screen').classList.contains('hidden')) showManualUpload();
   } catch (err) {
+    clearTimeout(slowTimer);
     console.error('OneDrive load failed:', err);
+    spinner.classList.add('hidden');
+    slowHint.classList.add('hidden');
+    progressEls.forEach(el => el.classList.add('hidden'));
+    msg.innerText = 'We couldn’t load the latest data';
+    sub.innerText = 'The dashboard couldn’t reach the CRM file on OneDrive.';
+    const safe = String(err && err.message || err).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
     errDiv.innerHTML =
-      '<strong>Could not load from OneDrive:</strong><br>' + err.message + '<br>' +
-      '<span class="text-xs mt-1 block">You can upload the file manually below, or retry once the issue is resolved.</span>';
+      'Please try again in a moment. If it keeps happening, you can upload the CRM Excel file manually, ' +
+      'or ask the dashboard owner to check that the OneDrive share link is still active.' +
+      '<details class="mt-2 text-xs text-red-500"><summary style="cursor:pointer">Technical details</summary><div class="mt-1" style="word-break:break-word">' + safe + '</div></details>';
     errDiv.classList.remove('hidden');
-    retryBtn.classList.remove('hidden');
-    setTimeout(() => {
-      loadingState.classList.add('hidden');
-      manualDiv.classList.remove('hidden');
-    }, 3000);
+    errActions.classList.remove('hidden'); errActions.style.display = 'flex';
   }
 }
 
@@ -3241,6 +3350,9 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Auto-load on page open: SharePoint library when hosted in SharePoint,
   // otherwise the OneDrive file via the Cloudflare Worker proxy.
+  // Reuse the upload-screen logo on the loading screen (no duplicate image data)
+  (function(){ const src = document.querySelector('#sp-manual-upload img'); const dst = document.getElementById('sp-loading-logo');
+    if (src && dst && src.src) { dst.src = src.src; dst.classList.remove('hidden'); } })();
   autoLoadData(false);
 
   document.querySelectorAll('.filter-toggle').forEach(btn => {
