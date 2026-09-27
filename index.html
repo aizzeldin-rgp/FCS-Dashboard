@@ -406,8 +406,8 @@ window.addEventListener('load', function() {
           <div class="mt-1 h-4"><span id="kpi-base-wow" class="text-[10px] font-bold text-gray-400"></span></div>
         </div>
         <div class="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
-          <span class="text-gray-400 font-medium" id="kpi-base-cancelled">100% Scope</span>
-          <span class="bg-[#FFF5F0] text-dawiyat-rust px-2 py-0.5 rounded font-bold border border-orange-100">Base Scope</span>
+          <span class="text-gray-400 font-medium" id="kpi-base-cancelled" style="line-height:1.35">All orders</span>
+          <span class="bg-[#FFF5F0] text-dawiyat-rust px-2 py-0.5 rounded font-bold border border-orange-100" style="white-space:nowrap">All Orders</span>
         </div>
       </div>
       <div class="bg-white rounded-xl shadow-card border-l-4 border-dawiyat-coral p-5 kpi-card flex flex-col justify-between">
@@ -1122,6 +1122,10 @@ function scopeForTab(rows, tab) {
   if (tab === 'Total') return rows.filter(r => r.classType && !r.cancelled);
   return rows.filter(r => r.classType === tab && !r.cancelled);
 }
+// Every classified order of a tab, cancelled ones included (used for the Total Orders Base card)
+function allOrdersForTab(rows, tab) {
+  return rows.filter(r => tab === 'Total' ? r.classType : r.classType === tab);
+}
 function cancelledCount(tab) {
   return rawNormalizedRows.filter(r => r.cancelled && (tab === 'Total' ? r.classType : r.classType === tab)).length;
 }
@@ -1301,9 +1305,19 @@ function renderDashboard(data) {
     snapshotDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) +
     ' • Generated: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-  document.getElementById('kpi-base').innerText = data.kpis.base.toLocaleString();
-  const cx = cancelledCount(currentTab);
-  document.getElementById('kpi-base-cancelled').innerText = cx ? 'Excl. ' + cx.toLocaleString() + ' cancelled' : '100% Scope';
+  // Total Orders Base = ALL orders of the tab (cancelled included). The other KPIs keep
+  // working on active (non-cancelled) orders as before.
+  const allOrders = allOrdersForTab(applyGlobalFilters(rawNormalizedRows), currentTab);
+  const cx = allOrders.filter(r => r.cancelled).length;
+  const ta50 = (data.nonObligation.reasons || []).filter(([why]) => /TA < 50/.test(why)).reduce((s, [, c]) => s + c, 0);
+  document.getElementById('kpi-base').innerText = allOrders.length.toLocaleString();
+  const baseNote = [];
+  if (cx) baseNote.push(cx.toLocaleString() + ' cancelled');
+  if (ta50) baseNote.push(ta50.toLocaleString() + ' TA<50');
+  const baseNoteEl = document.getElementById('kpi-base-cancelled');
+  baseNoteEl.innerText = baseNote.length ? 'Incl. ' + baseNote.join(' · ') : 'All orders';
+  baseNoteEl.title = 'Total of all orders, including cancelled orders' + (ta50 ? ' and orders outside the target area (TA < 50)' : '') +
+    '. Active (non-cancelled) orders: ' + data.kpis.base.toLocaleString() + '.';
   document.getElementById('kpi-filtered').innerText = data.kpis.filtered.toLocaleString();
   document.getElementById('kpi-completed').innerText = data.kpis.completed.toLocaleString();
   document.getElementById('kpi-remaining').innerText = data.kpis.remaining.toLocaleString();
@@ -1317,7 +1331,7 @@ function renderDashboard(data) {
 
   document.getElementById('kpi-target-pct-badge').innerText = pctTarget + '%';
   document.getElementById('kpi-target-bar').style.width = pctTarget + '%';
-  document.getElementById('kpi-target-subtext').innerText = data.kpis.filtered.toLocaleString() + ' / ' + data.kpis.base.toLocaleString();
+  document.getElementById('kpi-target-subtext').innerText = data.kpis.filtered.toLocaleString() + ' / ' + data.kpis.base.toLocaleString() + ' active';
 
   document.getElementById('kpi-comp-pct-badge').innerText = pctComp + '%';
   document.getElementById('kpi-comp-bar').style.width = pctComp + '%';
@@ -2730,6 +2744,10 @@ function computeKPIWoWDelta(tab) {
     remaining: prevTarget.length - prevCompleted,
     missed: saved ? saved.missed : undefined
   };
+  // Base card shows all orders (cancelled included), so its weekly change must too
+  const allScope = allOrdersForTab(rawNormalizedRows, tab);
+  current.base = allScope.length;
+  previous.base = allScope.filter(existed).length;
   return { current, previous, currentLabel: thisWeek.label + ' ' + thisWeek.year, previousLabel: prevWeek.label + ' ' + prevWeek.year, missedFromHistory: !!saved };
 }
 
