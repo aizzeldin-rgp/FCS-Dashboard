@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="color-scheme" content="only light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dawiyat | FCS Performance Dashboard</title>
 <!-- Tailwind Play CDN – works locally; SharePoint falls back to inline styles below -->
@@ -95,16 +96,21 @@ window.addEventListener('load', function() {
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-thumb { background: #FBD1C3; border-radius: 8px; }
 
+  :root{color-scheme:only light}   /* the dashboard is designed light — stop browsers from auto-darkening it */
   /* ---------- graphite header ---------- */
   #topbar{background:#FFFFFF;border-bottom:2px solid #F05A28;box-shadow:0 1px 8px rgba(17,24,39,.05);position:sticky;top:0;z-index:50}
   #topbar .tb-in{max-width:90rem;margin:0 auto;padding:10px 24px;display:flex;align-items:center;gap:20px}
   #topbar .tb-logo{height:48px;width:auto;display:block}
-  #topbar .tb-brand{border-left:1px solid #E5E7EB;padding-left:18px;color:#111827;font-weight:800;font-size:15px;white-space:nowrap;line-height:1.3}
+  #topbar .tb-brand{border-left:1px solid #E5E7EB;padding-left:18px;color:#F05A28;font-weight:800;font-size:15px;white-space:nowrap;line-height:1.3}
   #topbar .tb-sub{font:500 11px ui-monospace,Menlo,Consolas,monospace;color:#6B7280;margin-top:3px}
   #topbar .tb-sub strong{color:#F05A28;font-weight:700}
-  #topbar .tb-seg{display:flex;background:#F5F4F2;border:1px solid #ECEAE6;border-radius:999px;padding:3px;margin-left:auto;overflow-x:auto;max-width:100%}
+  #topbar .tb-segw{position:relative;margin-left:auto;min-width:0;max-width:100%;display:flex}
+  #topbar .tb-seg{display:flex;align-items:center;background:#FFF6F0;border:1.5px solid #FBC4AE;border-radius:999px;padding:3px;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  #topbar .tb-seg::-webkit-scrollbar{display:none}
+  #topbar .tb-seg-lbl{font:800 10px 'Plus Jakarta Sans',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#C2410C;padding:0 8px 0 12px;white-space:nowrap}
+  #topbar .tb-segw.more::after{content:'\203A';position:absolute;right:1.5px;top:1.5px;bottom:1.5px;width:44px;border-radius:0 999px 999px 0;background:linear-gradient(90deg,rgba(255,246,240,0),#FFF6F0 55%);display:flex;align-items:center;justify-content:flex-end;padding-right:12px;color:#F05A28;font-weight:900;font-size:22px;line-height:1;pointer-events:none}
   #topbar .tb-seg .tab-btn{border:0;background:none;padding:7px 13px;border-radius:999px;color:#4B5563;font-weight:700;font-size:14px;display:flex;gap:8px;align-items:baseline;white-space:nowrap;cursor:pointer;border-bottom:0;transition:background .2s,color .2s}
-  #topbar .tb-seg .tab-btn:hover{color:#111827;background:#FFFFFF;border-bottom:0}
+  #topbar .tb-seg .tab-btn:hover{color:#F05A28;background:#FFFFFF;border-bottom:0}
   #topbar .tb-seg .tab-btn small{font:600 11px ui-monospace,Menlo,Consolas,monospace;color:#9CA3AF}
   #topbar .tb-seg .tab-btn.tab-active{background:#F05A28;color:#fff;border-bottom:0;box-shadow:0 2px 8px rgba(240,90,40,.35)}
   #topbar .tb-seg .tab-btn.tab-active small{color:rgba(255,255,255,.9)}
@@ -116,7 +122,7 @@ window.addEventListener('load', function() {
   #topbar .tb-ibtn svg{width:16px;height:16px}
   #topbar .tb-ibtn.accent{border-color:#FBD1C3;color:#F05A28;background:#FFF6F0}
   @media (max-width:1280px){#topbar .tb-brand{display:none}}
-  @media (max-width:900px){#topbar .tb-in{flex-wrap:wrap}#topbar .tb-seg{order:3;margin-left:0;width:100%}#topbar .tb-brand{display:none}#topbar .tb-tools{margin-left:auto}}
+  @media (max-width:900px){#topbar .tb-in{flex-wrap:wrap}#topbar .tb-segw{order:3;margin-left:0;width:100%}#topbar .tb-seg{width:100%}#topbar .tb-brand{display:none}#topbar .tb-tools{margin-left:auto}}
 
   /* ---------- shared bits for new sections ---------- */
   .fx-note{font-size:12px;color:#6B7280;margin-top:10px;line-height:1.5}
@@ -171,7 +177,7 @@ window.addEventListener('load', function() {
   @media (max-width:640px){.fx-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
   @media print {
-    #topbar .tb-tools, #topbar .tb-seg{display:none!important}
+    #topbar .tb-tools, #topbar .tb-seg, #topbar .tb-segw{display:none!important}
     #topbar{position:static}
     #pa-controls{display:none!important}
     body { background: white !important; }
@@ -334,13 +340,14 @@ window.addEventListener('load', function() {
       <div class="tb-brand">Fiber Connection Service · Technical Services
         <div id="week-badge-nav" class="tb-sub">Week <strong id="week-badge-week">—</strong> · Updated <strong id="week-badge-updated">—</strong></div>
       </div>
-      <div class="tb-seg" role="tablist" aria-label="Dashboard view">
+      <div class="tb-segw" id="tb-segw"><div class="tb-seg" role="tablist" aria-label="Dashboard view">
+        <span class="tb-seg-lbl" aria-hidden="true">View</span>
         <button onclick="switchTab('Total')" data-tab="Total" class="tab-btn tab-active">All classes <small id="tabcount-Total"></small></button>
         <button onclick="switchTab('A')" data-tab="A" class="tab-btn tab-inactive">Class A <small id="tabcount-A"></small></button>
         <button onclick="switchTab('B')" data-tab="B" class="tab-btn tab-inactive">Class B <small id="tabcount-B"></small></button>
         <button onclick="switchTab('C')" data-tab="C" class="tab-btn tab-inactive">Class C <small id="tabcount-C"></small></button>
         <button onclick="switchTab('Compliance')" data-tab="Compliance" class="tab-btn tab-inactive">Compliance <small id="tabcount-Compliance"></small></button>
-      </div>
+      </div></div>
       <div class="tb-tools">
         <button id="reupload-btn" class="tb-ibtn" title="Upload a new Excel file" aria-label="Upload file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/></svg></button>
         <button id="refresh-sp-btn" class="tb-ibtn accent" title="Refresh data from OneDrive / SharePoint" aria-label="Refresh data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
@@ -802,7 +809,8 @@ window.addEventListener('load', function() {
           <div class="flex items-center gap-2 flex-wrap">
             <div class="fx-seg" id="flow-mode"><button data-f="inflow">Inflow</button><button data-f="delivery">Delivery</button><button data-f="both" class="on">Both</button></div>
             <div class="fx-seg" id="flow-class"><button data-c="Total" class="on">All</button><button data-c="A">Class A</button><button data-c="B">Class B</button><button data-c="C">Class C</button></div>
-            <div class="fx-seg" id="flow-scale"><button data-s="fit" class="on" title="Zoom the axis to the data">Scale: fit</button><button data-s="zero">From 0</button></div>
+            <div class="fx-seg" id="flow-act"><button data-a="all" class="on" title="Every created and delivered order">All orders</button><button data-a="excl" title="Remove the weekly activation orders listed in the FCS Activation file on OneDrive">Excl. activation</button></div>
+            <div class="fx-seg" id="flow-scale"><button data-s="clip" class="on" title="Keeps the chart readable when one week is far higher than the rest">Clip spikes</button><button data-s="full">Full</button></div>
             <div class="flex items-center bg-gray-100 rounded-lg p-0.5" id="flow-period">
               <button data-period="4" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">4W</button>
               <button data-period="8" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">8W</button>
@@ -3344,7 +3352,87 @@ function rmList(D, M) {
    Delivery = target orders completed in the week
    The week that contains the file date is still running and is drawn dashed.
    ============================================================ */
-const FLOW = { mode: 'both', cls: 'Total', scale: 'fit', period: '12' };
+
+/* ============================================================
+   ACTIVATION ORDERS — weekly counts typed by the team in "FCS Activation.xlsx" on OneDrive
+   (read through the same Cloudflare Worker: ?file=activation). Used only by the
+   Inflow vs Delivery chart when "Excl. activation" is selected: each week's count is taken
+   off both Inflow and Delivery. Columns (header names are matched loosely):
+     Week (W39 / 39 / a date in that week) · Year (optional) · Class (optional: A/B/C) · Activation orders
+   ============================================================ */
+const ACT = { status: 'idle', byWeek: new Map(), rows: 0, error: '' };
+function actWeekKey(weekCell, yearCell) {
+  if (weekCell === null || weekCell === undefined || weekCell === '') return null;
+  if (weekCell instanceof Date && !isNaN(weekCell)) return isoWeekKey(weekCell).key;
+  const str = String(weekCell).trim();
+  let m = str.match(/^(\d{4})\s*-?\s*W\s*(\d{1,2})$/i);
+  if (m) return m[1] + '-W' + String(+m[2]).padStart(2, '0');
+  m = str.match(/^W?\s*(\d{1,2})$/i);
+  if (m) {
+    const y = parseInt(yearCell, 10) || (snapshotDate ? isoWeekKey(snapshotDate).sortDate.getUTCFullYear() : new Date().getFullYear());
+    return y + '-W' + String(+m[1]).padStart(2, '0');
+  }
+  const d = parseDate(weekCell);
+  return d ? isoWeekKey(d).key : null;
+}
+function parseActivationBook(buf) {
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+  const map = new Map(); let rows = 0;
+  wb.SheetNames.forEach(name => {
+    const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+    const hi = aoa.slice(0, 10).findIndex(r => r.some(c => /week/i.test(String(c))));
+    if (hi < 0) return;
+    const h = aoa[hi].map(c => String(c).trim().toLowerCase());
+    const iW = h.findIndex(c => /week/.test(c));
+    const iY = h.findIndex(c => /^year/.test(c));
+    const iC = h.findIndex(c => /class/.test(c));
+    let iN = h.findIndex(c => /activ/.test(c));
+    if (iN < 0) iN = h.findIndex(c => /count|orders|qty|number/.test(c));
+    if (iN < 0) return;
+    aoa.slice(hi + 1).forEach(r => {
+      const n = Number(String(r[iN]).replace(/,/g, ''));
+      if (!n || isNaN(n)) return;
+      const key = actWeekKey(r[iW], iY >= 0 ? r[iY] : '');
+      if (!key) return;
+      const cls = iC >= 0 ? String(r[iC]).trim().toUpperCase().replace(/^CLASS\s*/, '') : '';
+      const e = map.get(key) || { A: 0, B: 0, C: 0, none: 0 };
+      if (cls === 'A' || cls === 'B' || cls === 'C') e[cls] += n; else e.none += n;
+      map.set(key, e); rows++;
+    });
+  });
+  return { map, rows };
+}
+async function loadActivation(forceFresh) {
+  ACT.status = 'loading';
+  try {
+    const url = ONEDRIVE_PROXY_URL + '?file=activation' + (forceFresh ? '&nocache=1&t=' + Date.now() : '');
+    const resp = await fetch(url, { cache: 'no-store' });
+    const buf = await resp.arrayBuffer();
+    const b = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
+    if (!resp.ok || !(b[0] === 0x50 && b[1] === 0x4B)) throw new Error('HTTP ' + resp.status);
+    const r = parseActivationBook(buf);
+    ACT.byWeek = r.map; ACT.rows = r.rows; ACT.status = 'ok'; ACT.error = '';
+  } catch (e) {
+    ACT.status = 'error'; ACT.error = e.message; ACT.byWeek = new Map(); ACT.rows = 0;
+    console.warn('Activation file not available:', e.message);
+  }
+  try { if (currentTab === 'Compliance') renderFlowChart(); else flowActButtons(); } catch (e) { /* chart not drawn yet */ }
+}
+function actFor(key, cls) {
+  const e = ACT.byWeek.get(key); if (!e) return 0;
+  return cls === 'Total' ? e.A + e.B + e.C + e.none : e[cls] || 0;
+}
+function flowActButtons() {
+  const ex = document.querySelector('#flow-act button[data-a="excl"]'); if (!ex) return;
+  const ok = ACT.status === 'ok';
+  ex.disabled = !ok; ex.style.opacity = ok ? '' : '.45'; ex.style.cursor = ok ? '' : 'not-allowed';
+  ex.title = ok ? 'Remove the weekly activation orders listed in the FCS Activation file on OneDrive'
+    : ACT.status === 'loading' ? 'Loading the FCS Activation file…' : 'The FCS Activation file could not be read' + (ACT.error ? ' (' + ACT.error + ')' : '');
+  if (!ok && FLOW.act === 'excl') FLOW.act = 'all';
+  document.querySelectorAll('#flow-act button').forEach(b => b.classList.toggle('on', b.dataset.a === FLOW.act));
+}
+
+const FLOW = { mode: 'both', cls: 'Total', scale: 'clip', period: '12', act: 'all' };
 let flowChart = null;
 function flowWeeks(cls) {
   const rows = scopeForTab(rawNormalizedRows, cls).filter(isTargetRow);
@@ -3375,11 +3463,22 @@ function renderFlowChart() {
   document.querySelectorAll('#flow-class button').forEach(b => b.classList.toggle('on', b.dataset.c === FLOW.cls));
   document.querySelectorAll('#flow-scale button').forEach(b => b.classList.toggle('on', b.dataset.s === FLOW.scale));
   document.querySelectorAll('.flow-period-btn').forEach(b => b.classList.toggle('period-active', b.dataset.period === FLOW.period));
+  flowActButtons();
   const name = FLOW.cls === 'Total' ? 'All classes' : 'Class ' + FLOW.cls;
   document.getElementById('flow-title').innerText = (FLOW.mode === 'inflow' ? 'Inflow' : FLOW.mode === 'delivery' ? 'Delivery' : 'Inflow vs Delivery') + ' — ' + name;
 
   const { weeks: all, undated, curKey } = flowWeeks(FLOW.cls);
-  const weeks = FLOW.period === 'all' ? all : all.slice(-parseInt(FLOW.period, 10));
+  let weeks = FLOW.period === 'all' ? all : all.slice(-parseInt(FLOW.period, 10));
+  // Excl. activation: take each week's activation count off both Inflow and Delivery
+  let actRemoved = 0; const actWeeks = [], actClamped = [];
+  if (FLOW.act === 'excl' && ACT.status === 'ok') {
+    weeks = weeks.map(w => {
+      const n = actFor(w.key, FLOW.cls); if (!n) return w;
+      actRemoved += n; actWeeks.push(w.label + ' (' + n.toLocaleString() + ')');
+      if (n > w.c || n > w.d) actClamped.push(w.label);
+      return Object.assign({}, w, { c: Math.max(0, w.c - n), d: Math.max(0, w.d - n) });
+    });
+  }
   const partial = weeks.length && weeks[weeks.length - 1].key === curKey;
   const last = weeks.length - 1;
   const C = weeks.reduce((a, w) => a + w.c, 0), D = weeks.reduce((a, w) => a + w.d, 0), net = C - D;
@@ -3394,6 +3493,11 @@ function renderFlowChart() {
   const notes = [];
   if (partial) notes.push(weeks[last].label + ' is not finished yet, so its point is shown with a dashed line.');
   if (undated) notes.push(undated.toLocaleString() + ' completed orders have no completion date and are not shown in Delivery.');
+  if (FLOW.act === 'excl' && ACT.status === 'ok') {
+    if (actClamped.length) notes.push('In ' + actClamped.join(', ') + ' the activation count is higher than the orders in the file, so that line is shown as 0.');
+    notes.push(actRemoved ? 'Activation orders taken off Inflow and Delivery: ' + actWeeks.join(', ') + '.' : 'No activation orders are listed for these weeks' + (FLOW.cls !== 'Total' ? ' in Class ' + FLOW.cls : '') + '.');
+    if (FLOW.cls !== 'Total') { let none = 0; weeks.forEach(w => { const e = ACT.byWeek.get(w.key); if (e) none += e.none; }); if (none) notes.push(none.toLocaleString() + ' activation orders have no class in the file, so they are only removed under All.'); }
+  }
   document.getElementById('flow-note').innerText = notes.join(' ');
 
   const multiYear = weeks.length && weeks[0].year !== weeks[last].year;
@@ -3407,29 +3511,60 @@ function renderFlowChart() {
   });
   if (FLOW.mode !== 'delivery') ds.push(mk('Inflow', weeks.map(w => w.c), '#F05A28'));
   if (FLOW.mode !== 'inflow') ds.push(mk('Delivery', weeks.map(w => w.d), '#10B981'));
+  // Clip spikes: one or two weeks far above the rest are cut at the top (real value written there)
   const vals = ds.flatMap(d => d.data);
-  let yMin = 0;
-  if (FLOW.scale === 'fit' && vals.length) { const mn = Math.min(...vals), mx = Math.max(...vals); yMin = Math.max(0, Math.floor((mn - (mx - mn) * 0.15) / 10) * 10); }
+  const nz = vals.filter(v => v > 0).sort((a, b) => a - b);
+  const median = nz.length ? nz[Math.floor(nz.length / 2)] : 0;
+  const threshold = Math.max(median * 5, 20);
+  const spikeIdx = new Set(); ds.forEach(d => d.data.forEach((v, i) => { if (v > threshold) spikeIdx.add(i); }));
+  let yMax;
+  if (FLOW.scale === 'clip' && spikeIdx.size && spikeIdx.size <= Math.max(2, weeks.length / 5)) {
+    const top = Math.max(...vals.filter(v => v <= threshold), 1) * 1.35;
+    const step = Math.pow(10, Math.floor(Math.log10(top)));
+    yMax = Math.ceil(top / step) * step;
+    ds.forEach(d => { d.raw = d.data.slice(); d.data = d.data.map(v => Math.min(v, yMax)); });
+    notes.push('Clip spikes: ' + [...spikeIdx].sort((a, b) => a - b).map(i => weeks[i].label).join(', ') + ' is far above the other weeks, so the line is cut at the top and the real value is written there. Choose Full to see the whole scale.');
+    document.getElementById('flow-note').innerText = notes.join(' ');
+  }
 
   if (!flowChart) {
     flowChart = new Chart(el.getContext('2d'), {
       type: 'line', data: { labels: [], datasets: [] },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        layout: { padding: { top: 18 } },
         plugins: {
           legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { weight: 'bold' } } },
           tooltip: { backgroundColor: '#000000', titleFont: { weight: 'bold' }, bodyFont: { weight: '600' }, padding: 10, cornerRadius: 8, boxPadding: 4 }
         },
-        scales: { x: { grid: { display: false }, ticks: { autoSkip: true, maxRotation: 0, autoSkipPadding: 14 } }, y: { grid: { color: '#F1F1F1' }, ticks: { callback: v => Number(v).toLocaleString() } } }
-      }
+        scales: { x: { grid: { display: false }, ticks: { autoSkip: true, maxRotation: 0, autoSkipPadding: 14 } }, y: { beginAtZero: true, grid: { color: '#F1F1F1' }, ticks: { callback: v => Number(v).toLocaleString() } } }
+      },
+      plugins: [{
+        id: 'flowClipLabels',
+        afterDatasetsDraw(chart) {
+          const { ctx } = chart;
+          ctx.save(); ctx.font = '800 11px Plus Jakarta Sans, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          chart.data.datasets.forEach((d, di) => {
+            if (!d.raw || chart.getDatasetMeta(di).hidden) return;
+            chart.getDatasetMeta(di).data.forEach((pt, i) => {
+              if (d.raw[i] <= d.data[i]) return;
+              const txt = '\u25B2 ' + d.raw[i].toLocaleString(), off = chart.data.datasets.length > 1 && di === 1 ? 14 : 0;
+              ctx.fillStyle = '#FFFFFF'; ctx.fillText(txt, pt.x + 1, pt.y - 5 + off + 1);
+              ctx.fillStyle = d.borderColor; ctx.fillText(txt, pt.x, pt.y - 5 + off);
+            });
+          });
+          ctx.restore();
+        }
+      }]
     });
   }
   flowChart.data.labels = labels;
   flowChart.data.datasets = ds;
-  flowChart.options.scales.y.min = yMin;
+  flowChart.options.scales.y.min = 0;
+  flowChart.options.scales.y.max = yMax;
   flowChart.options.plugins.tooltip.callbacks = {
     title: items => { const w = weeks[items[0].dataIndex]; const f = d => d.getDate() + ' ' + PA_MON[d.getMonth()]; return w.label + ' ' + w.year + ' · ' + f(w.start) + ' – ' + f(w.end) + (partial && items[0].dataIndex === last ? ' (not finished)' : ''); },
-    label: ctx => ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString(),
+    label: ctx => ' ' + ctx.dataset.label + ': ' + (ctx.dataset.raw ? ctx.dataset.raw[ctx.dataIndex] : ctx.parsed.y).toLocaleString(),
     afterBody: items => { const w = weeks[items[0].dataIndex], n = w.c - w.d; return ['', n === 0 ? 'Created = completed' : (n > 0 ? 'Pending went up by ' + n.toLocaleString() : 'Pending went down by ' + Math.abs(n).toLocaleString())]; }
   };
   flowChart.update();
@@ -3716,6 +3851,7 @@ async function loadFromOneDrive(forceFresh) {
   // Offer the manual upload only if loading is unusually slow
   const slowTimer = setTimeout(() => slowHint.classList.remove('hidden'), 20000);
 
+  loadActivation(forceFresh);   // small side file for the Inflow vs Delivery chart — never blocks the main load
   try {
     const url = ONEDRIVE_PROXY_URL + (forceFresh ? '?nocache=1&t=' + Date.now() : '');
     const resp = await fetch(url, { cache: 'no-store' });
@@ -4019,8 +4155,13 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('pf-clear').addEventListener('click', () => pfApply(null, null, 'all'));
 
   // ---- Inflow vs Delivery (Compliance tab) ----
+  // ---- Header tabs: on narrow screens show a › hint while more tabs are hidden to the right
+  const segW = document.getElementById('tb-segw'), seg = segW && segW.querySelector('.tb-seg');
+  const tabHint = () => { if (seg) segW.classList.toggle('more', seg.scrollLeft + seg.clientWidth < seg.scrollWidth - 4); };
+  if (seg) { seg.addEventListener('scroll', tabHint, { passive: true }); window.addEventListener('resize', tabHint); setTimeout(tabHint, 300); new MutationObserver(tabHint).observe(document.getElementById('dashboard-screen'), { attributes: true, attributeFilter: ['class'] }); }
+
   const flowBtn = (id, attr, key) => document.getElementById(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; FLOW[key] = b.dataset[attr]; renderFlowChart(); });
-  flowBtn('flow-mode', 'f', 'mode'); flowBtn('flow-class', 'c', 'cls'); flowBtn('flow-scale', 's', 'scale'); flowBtn('flow-period', 'period', 'period');
+  flowBtn('flow-mode', 'f', 'mode'); flowBtn('flow-class', 'c', 'cls'); flowBtn('flow-scale', 's', 'scale'); flowBtn('flow-act', 'a', 'act'); flowBtn('flow-period', 'period', 'period');
 
   // ---- Compliance chart: which class, which scale ----
   document.getElementById('comp-class').addEventListener('click', e => {
