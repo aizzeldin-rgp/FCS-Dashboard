@@ -315,12 +315,11 @@ window.addEventListener('load', function() {
         <div id="sp-load-error" class="mt-4 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 hidden"></div>
         <div id="sp-error-actions" class="mt-4 hidden" style="display:none;gap:8px;flex-wrap:wrap">
           <button id="sp-retry-btn" class="text-sm font-semibold text-white bg-[#F05A28] px-5 py-2 rounded-full hover:bg-orange-600" onclick="autoLoadData(true)">Try again</button>
-          <button class="text-sm font-semibold text-gray-600 px-5 py-2 rounded-full border border-gray-200 hover:bg-gray-50" onclick="showManualUpload()">Upload file manually</button>
         </div>
       </div>
 
       <!-- Only offered if loading is unusually slow -->
-      <p id="sp-slow-hint" class="mt-5 text-xs text-gray-400 hidden">Taking longer than usual… <button class="underline hover:text-gray-600" onclick="showManualUpload()">upload a file manually</button> instead</p>
+      <p id="sp-slow-hint" class="mt-5 text-xs text-gray-400 hidden">Taking longer than usual… please wait a moment.</p>
       <p class="text-xs text-gray-400 mt-6">All rights reserved &copy; Dawiyat 2026</p>
     </div>
     <!-- ── Manual upload fallback (hidden until needed) ── -->
@@ -362,7 +361,6 @@ window.addEventListener('load', function() {
         <button onclick="switchTab('Compliance')" data-tab="Compliance" class="tab-btn tab-inactive"><span class="tl">Compliance</span><small id="tabcount-Compliance"></small></button>
       </div></div>
       <div class="tb-tools">
-        <button id="reupload-btn" class="tb-ibtn" title="Upload a new Excel file" aria-label="Upload file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M7 9l5-5 5 5M4 16v4h16v-4"/></svg></button>
         <button id="refresh-sp-btn" class="tb-refresh" title="Load the latest CRM file from OneDrive" aria-label="Refresh data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg><span>Refresh</span></button>
         <button id="print-btn" class="tb-ibtn" title="Print / Export PDF" aria-label="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg></button>
       </div>
@@ -403,9 +401,7 @@ window.addEventListener('load', function() {
 
     <!-- Executive Brief -->
     <div id="executive-brief" class="relative rounded-xl shadow-sm mb-6 p-4 pr-10 flex items-start gap-3 border-l-4">
-      <button id="regenerate-brief-btn" class="absolute top-2 right-2 text-current opacity-50 hover:opacity-100" title="Regenerate from current data">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-      </button>
+      
     </div>
 
     <!-- Filter Bar -->
@@ -440,10 +436,7 @@ window.addEventListener('load', function() {
     <div id="key-summary-section" class="mb-2">
       <div class="flex items-center justify-between mb-3">
         <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Key Highlights</span>
-        <button id="regenerate-highlights-btn" class="text-xs font-bold text-dawiyat-vibrant bg-[#FFF6F0] px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-          Regenerate from current data
-        </button>
+        
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <!-- Box 1: Overall Highlights -->
@@ -452,13 +445,13 @@ window.addEventListener('load', function() {
             <div class="flex items-center justify-between pb-3 border-b border-orange-200 mb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-3 h-3 rounded-full bg-dawiyat-vibrant"></span>
-                <h3 class="text-base font-black text-gray-900 tracking-tight" contenteditable="true">Overall Highlights</h3>
+                <h3 class="text-base font-black text-gray-900 tracking-tight">Overall Highlights</h3>
               </div>
-              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-100 text-dawiyat-rust" contenteditable="true">Combined Portfolio</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-100 text-dawiyat-rust">Combined Portfolio</span>
             </div>
             <ul class="space-y-2.5 text-xs text-gray-700 leading-relaxed" id="highlight-overall-list"></ul>
           </div>
-          <div class="mt-4 pt-2.5 border-t border-orange-100 flex justify-between text-[11px] font-bold text-dawiyat-rust" id="highlight-overall-footer" contenteditable="true"></div>
+          <div class="mt-4 pt-2.5 border-t border-orange-100 flex justify-between text-[11px] font-bold text-dawiyat-rust" id="highlight-overall-footer"></div>
         </div>
 
         <!-- Box 2: Class A Highlights -->
@@ -467,13 +460,13 @@ window.addEventListener('load', function() {
             <div class="flex items-center justify-between pb-3 border-b border-orange-200 mb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-3 h-3 rounded-full bg-dawiyat-coral"></span>
-                <h3 class="text-base font-black text-gray-900 tracking-tight" contenteditable="true">Class A Highlights</h3>
+                <h3 class="text-base font-black text-gray-900 tracking-tight">Class A Highlights</h3>
               </div>
-              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200" contenteditable="true">Paid Orders</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">Paid Orders</span>
             </div>
             <ul class="space-y-2.5 text-xs text-gray-700 leading-relaxed" id="highlight-a-list"></ul>
           </div>
-          <div class="mt-4 pt-2.5 border-t border-orange-100 flex justify-between text-[11px] font-bold text-gray-700" id="highlight-a-footer" contenteditable="true"></div>
+          <div class="mt-4 pt-2.5 border-t border-orange-100 flex justify-between text-[11px] font-bold text-gray-700" id="highlight-a-footer"></div>
         </div>
 
         <!-- Box 3: Class B Highlights -->
@@ -482,13 +475,13 @@ window.addEventListener('load', function() {
             <div class="flex items-center justify-between pb-3 border-b border-orange-200 mb-3">
               <div class="flex items-center space-x-2">
                 <span class="w-3 h-3 rounded-full bg-dawiyat-rust"></span>
-                <h3 class="text-base font-black text-gray-900 tracking-tight" contenteditable="true">Class B Highlights</h3>
+                <h3 class="text-base font-black text-gray-900 tracking-tight">Class B Highlights</h3>
               </div>
-              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-50 text-dawiyat-rust border border-orange-200" contenteditable="true">TA &ge; 50 Orders</span>
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-orange-50 text-dawiyat-rust border border-orange-200">TA &ge; 50 Orders</span>
             </div>
             <ul class="space-y-2.5 text-xs text-gray-700 leading-relaxed" id="highlight-b-list"></ul>
           </div>
-          <div class="mt-4 pt-2.5 border-t border-orange-100 flex justify-between text-[11px] font-bold text-dawiyat-rust" id="highlight-b-footer" contenteditable="true"></div>
+          <div class="mt-4 pt-2.5 border-t border-orange-100 flex justify-between text-[11px] font-bold text-dawiyat-rust" id="highlight-b-footer"></div>
         </div>
       </div>
     </div>
@@ -756,10 +749,7 @@ window.addEventListener('load', function() {
         </div>
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Executive Summary</span>
-          <button id="regenerate-compliance-insights-btn" class="text-xs font-bold text-dawiyat-vibrant bg-[#FFF6F0] px-3 py-1.5 rounded-lg border border-orange-200 hover:bg-orange-100 flex items-center gap-1.5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Regenerate from current data
-          </button>
+          
         </div>
         <div id="compliance-insights" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
       </div>
@@ -2048,7 +2038,7 @@ function renderComplianceInsights(snap, history) {
 
   document.getElementById('compliance-insights').innerHTML = cards.map(c =>
     '<div class="flex items-start gap-2.5 border-l-4 ' + borderColor[c.icon] + ' rounded-lg p-3">' + iconSvg[c.icon] +
-    '<p class="text-[13px] leading-snug text-gray-700" contenteditable="true">' + c.text + '</p></div>'
+    '<p class="text-[13px] leading-snug text-gray-700">' + c.text + '</p></div>'
   ).join('');
 }
 
@@ -2977,10 +2967,9 @@ function renderExecutiveBrief(data, force) {
 
   el.className = 'relative rounded-xl shadow-sm mb-6 p-4 pr-10 flex items-start gap-3 border-l-4 ' + colorMap.border + ' ' + colorMap.bg;
   el.innerHTML =
-    '<button id="regenerate-brief-btn" class="absolute top-2 right-2 text-current opacity-50 hover:opacity-100" title="Regenerate from current data">' +
-    '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>' +
+
     '<span class="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0 ' + colorMap.dot + '"></span>' +
-    '<p class="text-sm leading-relaxed ' + colorMap.text + '" contenteditable="true">' +
+    '<p class="text-sm leading-relaxed ' + colorMap.text + '">' +
     (data.period
       ? '<strong>' + scopeLabel + periodPhrase + ':</strong> ' + data.kpis.filtered.toLocaleString() + ' target orders were created and ' + data.kpis.completed.toLocaleString() + ' were completed (' + pctComp + '% of created). ' +
         '<strong>On ' + pfFmt(data.period.to) + ', ' + data.kpis.missed.toLocaleString() + ' orders were late.</strong>' + riskPhrase
@@ -3019,7 +3008,7 @@ function weeklyRateSentence(tab) {
 }
 
 function bulletLi(colorClass, html) {
-  return '<li class="flex items-start space-x-2"><span class="' + colorClass + ' font-black">\u2022</span><span contenteditable="true">' + html + '</span></li>';
+  return '<li class="flex items-start space-x-2"><span class="' + colorClass + ' font-black">\u2022</span><span>' + html + '</span></li>';
 }
 
 function renderHighlights() {
@@ -3840,10 +3829,7 @@ async function loadFromSharePoint() {
    ============================================================ */
 const ONEDRIVE_PROXY_URL = 'https://fcs-proxy.a-izzeldin91.workers.dev/';
 
-function showManualUpload() {
-  document.getElementById('sp-loading-state').classList.add('hidden');
-  document.getElementById('sp-manual-upload').classList.remove('hidden');
-}
+function showManualUpload() { /* manual upload removed — the dashboard is view-only */ }
 
 // Loading-screen helpers: step list, progress bar and friendly status text
 function spSetStep(step) {
@@ -3948,7 +3934,8 @@ async function loadFromOneDrive(forceFresh) {
 
     // If parsing failed (e.g. missing columns), handleArrayBuffer shows the error
     // in the manual-upload panel — reveal it instead of leaving the loader up.
-    if (!document.getElementById('upload-screen').classList.contains('hidden')) showManualUpload();
+    if (!document.getElementById('upload-screen').classList.contains('hidden'))
+      throw new Error((document.getElementById('upload-error').innerText || 'The CRM file could not be read.').trim());
   } catch (err) {
     clearTimeout(slowTimer);
     console.error('OneDrive load failed:', err);
@@ -3959,8 +3946,7 @@ async function loadFromOneDrive(forceFresh) {
     sub.innerText = 'The dashboard couldn’t reach the CRM file on OneDrive.';
     const safe = String(err && err.message || err).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
     errDiv.innerHTML =
-      'Please try again in a moment. If it keeps happening, you can upload the CRM Excel file manually, ' +
-      'or ask the dashboard owner to check that the OneDrive share link is still active.' +
+      'Please try again in a moment. If it keeps happening, please contact the dashboard owner.' +
       '<details class="mt-2 text-xs text-red-500"><summary style="cursor:pointer">Technical details</summary><div class="mt-1" style="word-break:break-word">' + safe + '</div></details>';
     errDiv.classList.remove('hidden');
     errActions.classList.remove('hidden'); errActions.style.display = 'flex';
@@ -4100,17 +4086,12 @@ window.addEventListener('DOMContentLoaded', () => {
   dropzone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) handleFile(f); });
 
   document.getElementById('print-btn').addEventListener('click', () => window.print());
-  document.getElementById('regenerate-highlights-btn').addEventListener('click', renderHighlights);
-  document.getElementById('regenerate-compliance-insights-btn').addEventListener('click', regenerateComplianceInsights);
 
 
   // keep manual edits to the brief when switching tabs / filters
   document.getElementById('executive-brief').addEventListener('input', () => {
     const k = executiveBriefKey(), el = document.getElementById('executive-brief');
     executiveBriefCache[k] = { cls: el.className, html: el.innerHTML };
-  });
-  document.getElementById('executive-brief').addEventListener('click', e => {
-    if (e.target.closest('#regenerate-brief-btn')) renderExecutiveBrief(computeCurrentTabData(), true);
   });
 
   // "Refresh Data" button — re-pull the latest file from SharePoint
@@ -4122,15 +4103,6 @@ window.addEventListener('DOMContentLoaded', () => {
     autoLoadData(true);
   });
 
-  // "Upload File" fallback button
-  document.getElementById('reupload-btn').addEventListener('click', () => {
-    document.getElementById('dashboard-screen').classList.add('hidden');
-    document.getElementById('sp-loading-state').classList.add('hidden');
-    document.getElementById('sp-manual-upload').classList.remove('hidden');
-    document.getElementById('upload-screen').classList.remove('hidden');
-    document.getElementById('upload-status').innerText = '';
-    fileInput.value = '';
-  });
 
   // Auto-load on page open: SharePoint library when hosted in SharePoint,
   // otherwise the OneDrive file via the Cloudflare Worker proxy.
