@@ -812,7 +812,7 @@ window.addEventListener('load', function() {
           <div class="flex items-center gap-2 flex-wrap">
             <div class="fx-seg" id="flow-mode"><button data-f="inflow">Inflow</button><button data-f="delivery">Delivery</button><button data-f="both" class="on">Both</button></div>
             <div class="fx-seg" id="flow-class"><button data-c="Total" class="on">All</button><button data-c="A">Class A</button><button data-c="B">Class B</button><button data-c="C">Class C</button></div>
-            <div class="fx-seg" id="flow-act"><button data-a="all" class="on" title="Every created and delivered order">All orders</button><button data-a="excl" title="Remove the weekly activation orders listed in the FCS Activation file on OneDrive">Excl. activation</button></div>
+            <div class="fx-seg" id="flow-act"><button data-a="all" class="on" title="Every created and delivered order">All orders</button><button data-a="excl" title="Remove the activation orders listed in the FCS Activation file on OneDrive">Excl. activation</button></div>
             <div class="fx-seg" id="flow-scale"><button data-s="clip" class="on" title="Keeps the chart readable when one week is far higher than the rest">Clip spikes</button><button data-s="full">Full</button></div>
             <div class="flex items-center bg-gray-100 rounded-lg p-0.5" id="flow-period">
               <button data-period="4" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">4W</button>
@@ -976,6 +976,7 @@ function normalizeRows(json, fieldMap) {
     }
     return {
       classType: ['A', 'B', 'C'].includes(classTypeRaw) ? classTypeRaw : '',
+      orderId: fieldMap.orderId ? String(r[fieldMap.orderId] ?? '').trim().toUpperCase() : '',
       orderStatus: orderStatus,
       paymentStatus: (r[fieldMap.paymentStatus] || '').toString().trim(),
       withinSLA: (r[fieldMap.withinSLA] || '').toString().trim(),
@@ -3364,53 +3365,26 @@ function rmList(D, M) {
    ============================================================ */
 
 /* ============================================================
-   ACTIVATION ORDERS — weekly counts typed by the team in "FCS Activation.xlsx" on OneDrive
+   ACTIVATION ORDERS — list of OrderIds in "FCS Activation.xlsx" on OneDrive
    (read through the same Cloudflare Worker: ?file=activation). Used only by the
-   Inflow vs Delivery chart when "Excl. activation" is selected: each week's count is taken
-   off both Inflow and Delivery. Columns (header names are matched loosely):
-     Week (W39 / 39 / a date in that week) · Year (optional) · Class (optional: A/B/C) · Activation orders
+   Inflow vs Delivery chart. Each listed order that is a target order in the CRM file is
+   taken off Inflow in the week it was created and off Delivery in the week it was completed.
+   OrderIds not found in the CRM file are ignored. Column: OrderId (header matched loosely).
    ============================================================ */
-const ACT = { status: 'idle', byWeek: new Map(), rows: 0, error: '' };
-function actWeekKey(weekCell, yearCell) {
-  if (weekCell === null || weekCell === undefined || weekCell === '') return null;
-  if (weekCell instanceof Date && !isNaN(weekCell)) return isoWeekKey(weekCell).key;
-  const str = String(weekCell).trim();
-  let m = str.match(/^(\d{4})\s*-?\s*W\s*(\d{1,2})$/i);
-  if (m) return m[1] + '-W' + String(+m[2]).padStart(2, '0');
-  m = str.match(/^W?\s*(\d{1,2})$/i);
-  if (m) {
-    const y = parseInt(yearCell, 10) || (snapshotDate ? isoWeekKey(snapshotDate).sortDate.getUTCFullYear() : new Date().getFullYear());
-    return y + '-W' + String(+m[1]).padStart(2, '0');
-  }
-  const d = parseDate(weekCell);
-  return d ? isoWeekKey(d).key : null;
-}
+const ACT = { status: 'idle', ids: new Set(), rows: 0, error: '' };
 function parseActivationBook(buf) {
-  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-  const map = new Map(); let rows = 0;
+  const wb = XLSX.read(buf, { type: 'array', raw: true });
+  const ids = new Set(); let found = false;
   wb.SheetNames.forEach(name => {
     const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
-    const hi = aoa.slice(0, 10).findIndex(r => r.some(c => /week/i.test(String(c))));
+    const hi = aoa.slice(0, 10).findIndex(r => r.some(c => /^order\s*_?id$/i.test(String(c).trim())));
     if (hi < 0) return;
-    const h = aoa[hi].map(c => String(c).trim().toLowerCase());
-    const iW = h.findIndex(c => /week/.test(c));
-    const iY = h.findIndex(c => /^year/.test(c));
-    const iC = h.findIndex(c => /class/.test(c));
-    let iN = h.findIndex(c => /activ/.test(c));
-    if (iN < 0) iN = h.findIndex(c => /count|orders|qty|number/.test(c));
-    if (iN < 0) return;
-    aoa.slice(hi + 1).forEach(r => {
-      const n = Number(String(r[iN]).replace(/,/g, ''));
-      if (!n || isNaN(n)) return;
-      const key = actWeekKey(r[iW], iY >= 0 ? r[iY] : '');
-      if (!key) return;
-      const cls = iC >= 0 ? String(r[iC]).trim().toUpperCase().replace(/^CLASS\s*/, '') : '';
-      const e = map.get(key) || { A: 0, B: 0, C: 0, none: 0 };
-      if (cls === 'A' || cls === 'B' || cls === 'C') e[cls] += n; else e.none += n;
-      map.set(key, e); rows++;
-    });
+    found = true;
+    const iO = aoa[hi].findIndex(c => /^order\s*_?id$/i.test(String(c).trim()));
+    aoa.slice(hi + 1).forEach(r => { const v = String(r[iO] ?? '').trim().toUpperCase(); if (v) ids.add(v); });
   });
-  return { map, rows };
+  if (!found) throw new Error('no OrderId column');
+  return { ids, rows: ids.size };
 }
 async function loadActivation(forceFresh) {
   ACT.status = 'loading';
@@ -3421,22 +3395,18 @@ async function loadActivation(forceFresh) {
     const b = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
     if (!resp.ok || !(b[0] === 0x50 && b[1] === 0x4B)) throw new Error('HTTP ' + resp.status);
     const r = parseActivationBook(buf);
-    ACT.byWeek = r.map; ACT.rows = r.rows; ACT.status = 'ok'; ACT.error = '';
+    ACT.ids = r.ids; ACT.rows = r.rows; ACT.status = 'ok'; ACT.error = '';
   } catch (e) {
-    ACT.status = 'error'; ACT.error = e.message; ACT.byWeek = new Map(); ACT.rows = 0;
+    ACT.status = 'error'; ACT.error = e.message; ACT.ids = new Set(); ACT.rows = 0;
     console.warn('Activation file not available:', e.message);
   }
   try { if (currentTab === 'Compliance') renderFlowChart(); else flowActButtons(); } catch (e) { /* chart not drawn yet */ }
-}
-function actFor(key, cls) {
-  const e = ACT.byWeek.get(key); if (!e) return 0;
-  return cls === 'Total' ? e.A + e.B + e.C + e.none : e[cls] || 0;
 }
 function flowActButtons() {
   const ex = document.querySelector('#flow-act button[data-a="excl"]'); if (!ex) return;
   const ok = ACT.status === 'ok';
   ex.disabled = !ok; ex.style.opacity = ok ? '' : '.45'; ex.style.cursor = ok ? '' : 'not-allowed';
-  ex.title = ok ? 'Remove the weekly activation orders listed in the FCS Activation file on OneDrive'
+  ex.title = ok ? 'Remove the activation orders listed in the FCS Activation file on OneDrive'
     : ACT.status === 'loading' ? 'Loading the FCS Activation file…' : 'The FCS Activation file could not be read' + (ACT.error ? ' (' + ACT.error + ')' : '');
   if (!ok && FLOW.act === 'excl') FLOW.act = 'all';
   document.querySelectorAll('#flow-act button').forEach(b => b.classList.toggle('on', b.dataset.a === FLOW.act));
@@ -3454,14 +3424,16 @@ function flowWeeks(cls) {
   if (!first) return { weeks: [], undated: 0 };
   const weeks = [], idx = new Map();
   for (let w = weekBounds(first); w.start <= cur.start && weeks.length < 600; w = weekBounds(new Date(w.end.getTime() + 1))) {
-    idx.set(w.key, weeks.length); weeks.push({ key: w.key, label: w.label, year: w.year, start: w.start, end: w.end, c: 0, d: 0 });
+    idx.set(w.key, weeks.length); weeks.push({ key: w.key, label: w.label, year: w.year, start: w.start, end: w.end, c: 0, d: 0, ac: 0, ad: 0 });
   }
   let undated = 0;
+  const actIds = ACT.status === 'ok' ? ACT.ids : null;
   rows.forEach(r => {
-    if (r.createTime && r.createTime <= cur.end) { const i = idx.get(weekBounds(r.createTime).key); if (i !== undefined) weeks[i].c++; }
+    const isAct = !!(actIds && r.orderId && actIds.has(r.orderId));
+    if (r.createTime && r.createTime <= cur.end) { const i = idx.get(weekBounds(r.createTime).key); if (i !== undefined) { weeks[i].c++; if (isAct) weeks[i].ac++; } }
     if (isCompleted(r)) {
       if (!r.completedTime) { undated++; return; }
-      if (r.completedTime <= cur.end) { const i = idx.get(weekBounds(r.completedTime).key); if (i !== undefined) weeks[i].d++; }
+      if (r.completedTime <= cur.end) { const i = idx.get(weekBounds(r.completedTime).key); if (i !== undefined) { weeks[i].d++; if (isAct) weeks[i].ad++; } }
     }
   });
   return { weeks, undated, curKey: cur.key };
@@ -3479,31 +3451,15 @@ function renderFlowChart() {
 
   const { weeks: all, undated, curKey } = flowWeeks(FLOW.cls);
   let weeks = FLOW.period === 'all' ? all : all.slice(-parseInt(FLOW.period, 10));
-  // Activation orders are removed CLASS BY CLASS: a class can never lose more orders than it has in that
-  // week, and "All" is always the sum of A + B + C (so All can never show less than one of its classes).
-  // Orders listed without a class are taken off the All total only.
+  // Activation orders are matched by OrderId against the target orders of the chosen class, so each
+  // order is removed once, from its own week and class; "All" is therefore always A + B + C.
   const actOk = ACT.status === 'ok';
-  const perCls = {};
-  if (actOk) ['A', 'B', 'C'].forEach(k => { const m = new Map(); flowWeeks(k).weeks.forEach(w => m.set(w.key, w)); perCls[k] = m; });
-  let actC = 0, actD = 0; const actWeeks = [], actShort = [];
-  const removal = w => {
-    const e = ACT.byWeek.get(w.key); if (!e) return null;
-    const ks = FLOW.cls === 'Total' ? ['A', 'B', 'C'] : [FLOW.cls];
-    let rc = 0, rd = 0, listed = 0;
-    ks.forEach(k => {
-      const n = e[k] || 0; if (!n) return; listed += n;
-      const cw = perCls[k].get(w.key) || { c: 0, d: 0 };
-      rc += Math.min(n, cw.c); rd += Math.min(n, cw.d);
-      if (n > cw.d) actShort.push(w.label + ' Class ' + k + ': ' + n.toLocaleString() + ' activation listed, only ' + cw.d.toLocaleString() + ' delivered');
-    });
-    if (FLOW.cls === 'Total' && e.none) { listed += e.none; rc += Math.min(e.none, w.c - rc); rd += Math.min(e.none, w.d - rd); }
-    return listed ? { rc, rd, listed } : null;
-  };
+  let actC = 0, actD = 0; const actWeeks = [];
   if (actOk) {
     weeks = weeks.map(w => {
-      const r = removal(w); if (!r) return w;
-      actC += r.rc; actD += r.rd; actWeeks.push(w.label + ' ' + r.rd.toLocaleString());
-      return Object.assign({}, w, FLOW.act === 'excl' ? { c: w.c - r.rc, d: w.d - r.rd } : {}, { ac: r.rc, ad: r.rd });
+      if (!w.ac && !w.ad) return w;
+      actC += w.ac; actD += w.ad; if (w.ad) actWeeks.push(w.label + ' ' + w.ad.toLocaleString());
+      return FLOW.act === 'excl' ? Object.assign({}, w, { c: w.c - w.ac, d: w.d - w.ad }) : w;
     });
   }
   const excl = FLOW.act === 'excl' && actOk;
@@ -3524,8 +3480,7 @@ function renderFlowChart() {
   const notes = [];   // [text(html), isWarning]
   if (partial) notes.push([weeks[last].label + ' still running (dashed line)']);
   if (excl) {
-    notes.push([actWeeks.length ? 'Activation removed from Delivery: ' + actWeeks.join(' · ') : 'No activation orders listed for these weeks' + (FLOW.cls !== 'Total' ? ' in Class ' + FLOW.cls : '')]);
-    if (FLOW.cls !== 'Total') { let none = 0; weeks.forEach(w => { const e = ACT.byWeek.get(w.key); if (e) none += e.none; }); if (none) notes.push([fmt(none) + ' activation orders have no class, removed under All only']); }
+    notes.push([actWeeks.length ? 'Activation removed from Delivery: ' + actWeeks.join(' · ') : actC ? 'No activation orders delivered in these weeks' : 'No activation orders in these weeks' + (FLOW.cls !== 'Total' ? ' in Class ' + FLOW.cls : '')]);
   }
   if (undated) notes.push([fmt(undated) + ' completed orders have no date']);
   const drawNotes = () => { document.getElementById('flow-note').innerHTML = notes.map(n => '<li' + (n[1] ? ' class="warn"' : '') + '>' + n[0] + '</li>').join(''); };
