@@ -1115,8 +1115,11 @@ function computeSnapshotDate(rows) {
   return max || new Date();
 }
 
+// Weeks run Sunday -> Saturday (Saudi work week). Each week keeps the ISO number of the
+// Monday–Sunday week that shares its Monday, so shifting the date by one day gives the number:
+// e.g. Sun 27 Sep – Sat 3 Oct 2026 = W40.
 function isoWeekKey(d) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + 1));
   const dayNum = date.getUTCDay() || 7;
   date.setUTCDate(date.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
@@ -1124,14 +1127,14 @@ function isoWeekKey(d) {
   return { key: date.getUTCFullYear() + '-W' + String(weekNo).padStart(2, '0'), sortDate: date, label: 'W' + weekNo };
 }
 
-// Monday 00:00 -> Sunday 23:59:59.999 bounds for the ISO week containing d, in LOCAL time
+// Sunday 00:00 -> Saturday 23:59:59.999 bounds for the week containing d, in LOCAL time
 // (so it lines up with the local CreateTime values already parsed from the file).
 function weekBounds(d) {
-  const dow = d.getDay() || 7; // 1 (Mon) .. 7 (Sun)
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (dow - 1), 0, 0, 0, 0);
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 23, 59, 59, 999);
+  const dow = d.getDay(); // 0 (Sun) .. 6 (Sat)
+  const sunday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - dow, 0, 0, 0, 0);
+  const saturday = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + 6, 23, 59, 59, 999);
   const iso = isoWeekKey(d);
-  return { start: monday, end: sunday, key: iso.key, label: iso.label, year: iso.sortDate.getUTCFullYear() };
+  return { start: sunday, end: saturday, key: iso.key, label: iso.label, year: iso.sortDate.getUTCFullYear() };
 }
 
 function updateWeekBadge() {
