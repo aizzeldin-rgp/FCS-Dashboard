@@ -3536,7 +3536,6 @@ function renderFlowChart() {
   if (partial) notes.push([weeks[last].label + ' still running (dashed line)']);
   if (excl) {
     notes.push([actWeeks.length ? 'Activation removed from Delivery: ' + actWeeks.join(' · ') : 'No activation orders listed for these weeks' + (FLOW.cls !== 'Total' ? ' in Class ' + FLOW.cls : '')]);
-    actShort.forEach(t => notes.push([t + ' — check the Activation file', true]));
     if (FLOW.cls !== 'Total') { let none = 0; weeks.forEach(w => { const e = ACT.byWeek.get(w.key); if (e) none += e.none; }); if (none) notes.push([fmt(none) + ' activation orders have no class, removed under All only']); }
   }
   if (undated) notes.push([fmt(undated) + ' completed orders have no date']);
