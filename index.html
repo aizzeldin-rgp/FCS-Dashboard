@@ -63,10 +63,6 @@ window.addEventListener('load', function() {
   :root {
     --page-bg: #F8F9FA; --page-fg: #000000; --card-bg: #FFFFFF; --card-border: #E5E7EB;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) { --page-bg: #16130F; --page-fg: #F3EDE8; --card-bg: #211B15; --card-border: #3A2E22; }
-  }
-  :root[data-theme="dark"] { --page-bg: #16130F; --page-fg: #F3EDE8; --card-bg: #211B15; --card-border: #3A2E22; }
   html, body { height: 100%; }
   body {
     background-color: var(--page-bg); color: var(--page-fg);
@@ -141,6 +137,7 @@ window.addEventListener('load', function() {
   .fx-seg button{border:0;background:none;font-size:12px;font-weight:700;color:#5A5A5A;padding:6px 11px;border-radius:6px;cursor:pointer;white-space:nowrap}
   .fx-seg button.on{background:#fff;color:#F05A28;box-shadow:0 1px 2px rgba(0,0,0,.08)}
   .fx-date{font-size:12px;border:1px solid #E5E7EB;border-radius:8px;padding:6px 8px;color:#111827;background:#fff}
+  @media (pointer:coarse){.fx-date{font-size:16px}}
   .fx-lbl{font-size:10px;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px}
   .fx-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:18px 0 8px}
   #period-card{background:radial-gradient(1200px 260px at 100% 0%, #FFF3EC 0%, rgba(255,243,236,0) 60%), #FFFFFF}
@@ -3520,7 +3517,7 @@ function renderFlowChart() {
       type: 'line', data: { labels: [], datasets: [] },
       options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        layout: { padding: { top: 18 } },
+        layout: { padding: { top: 2 } },
         plugins: {
           legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { weight: 'bold' } } },
           tooltip: { backgroundColor: '#000000', titleFont: { weight: 'bold' }, bodyFont: { weight: '600' }, padding: 10, cornerRadius: 8, boxPadding: 4 }
@@ -3529,16 +3526,35 @@ function renderFlowChart() {
       },
       plugins: [{
         id: 'flowClipLabels',
+        // Keeps a clear band between the legend and the chart, so the real-value labels never sit on the legend
+        beforeInit(chart) { const fit = chart.legend.fit; chart.legend.fit = function () { fit.call(this); this.height += 16 + (chart.data.datasets.length > 1 ? 14 : 0); }; },
         afterDatasetsDraw(chart) {
           const { ctx } = chart;
-          ctx.save(); ctx.font = '800 11px Plus Jakarta Sans, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.save(); ctx.font = '800 11px Plus Jakarta Sans, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+          const maxRight = chart.width - 2, gap = 8;
           chart.data.datasets.forEach((d, di) => {
             if (!d.raw || chart.getDatasetMeta(di).hidden) return;
-            chart.getDatasetMeta(di).data.forEach((pt, i) => {
-              if (d.raw[i] <= d.data[i]) return;
-              const txt = '\u25B2 ' + d.raw[i].toLocaleString(), off = chart.data.datasets.length > 1 && di === 1 ? 14 : 0;
-              ctx.fillStyle = '#FFFFFF'; ctx.fillText(txt, pt.x + 1, pt.y - 5 + off + 1);
-              ctx.fillStyle = d.borderColor; ctx.fillText(txt, pt.x, pt.y - 5 + off);
+            const off = chart.data.datasets.length > 1 && di === 0 ? -14 : 0;   // Inflow on the upper line, Delivery under it, both above the chart
+            const items = [];
+            chart.getDatasetMeta(di).data.forEach((pt, i) => { if (d.raw[i] > d.data[i]) items.push({ pt, i, moved: false }); });
+            // Each label sits centred over its point. Working from the right, a label that would run off the
+            // chart or into the next label is moved left, and then also names its week so it stays clear.
+            const place = () => {
+              let limit = maxRight;
+              for (let k = items.length - 1; k >= 0; k--) {
+                const it = items[k];
+                it.txt = (it.moved ? chart.data.labels[it.i] + ' ' : '') + '\u25B2 ' + d.raw[it.i].toLocaleString();
+                it.w = ctx.measureText(it.txt).width;
+                const want = it.pt.x - it.w / 2;
+                it.x = Math.max(2, Math.min(want, limit - it.w));
+                if (want - it.x > it.w / 2) it.moved = true;
+                limit = it.x - gap;
+              }
+            };
+            for (let pass = 0; pass < 3; pass++) { const before = items.map(it => it.moved).join(); place(); if (items.map(it => it.moved).join() === before) break; }
+            items.forEach(it => {
+              ctx.fillStyle = '#FFFFFF'; ctx.fillText(it.txt, it.x + 1, it.pt.y - 5 + off + 1);
+              ctx.fillStyle = d.borderColor; ctx.fillText(it.txt, it.x, it.pt.y - 5 + off);
             });
           });
           ctx.restore();
