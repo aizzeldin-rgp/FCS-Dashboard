@@ -702,6 +702,29 @@ window.addEventListener('load', function() {
           <div id="pa-spike"></div>
           <p class="fx-note" id="pa-note"></p>
         </div>
+        <!-- Inflow vs Delivery (target orders per week) -->
+        <div class="bg-white rounded-xl shadow-card p-6 border border-gray-200 overflow-hidden" id="flow-card">
+          <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-1">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900" id="flow-title">Inflow vs Delivery — All classes</h3>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="fx-seg" id="flow-mode"><button data-f="inflow">Inflow</button><button data-f="delivery">Delivery</button><button data-f="both" class="on">Both</button></div>
+              <div class="fx-seg" id="flow-class"><button data-c="Total" class="on">All</button><button data-c="A">Class A</button><button data-c="B">Class B</button><button data-c="C">Class C</button></div>
+              <div class="fx-seg" id="flow-act"><button data-a="all" class="on" title="Every created and delivered order">All orders</button><button data-a="excl" title="Remove the activation orders listed in the FCS Activation file on OneDrive">Excl. activation</button></div>
+              <div class="fx-seg" id="flow-scale"><button data-s="clip" class="on" title="Keeps the chart readable when one week is far higher than the rest">Clip spikes</button><button data-s="full">Full</button></div>
+              <div class="flex items-center bg-gray-100 rounded-lg p-0.5" id="flow-period">
+                <button data-period="4" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">4W</button>
+                <button data-period="8" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">8W</button>
+                <button data-period="12" class="flow-period-btn period-active text-xs font-bold px-3 py-1.5 rounded-md">12W</button>
+                <button data-period="all" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">All</button>
+              </div>
+            </div>
+          </div>
+          <div class="fx-tiles" id="flow-tiles"></div>
+          <div class="relative h-80 w-full"><canvas id="flowChart"></canvas></div>
+          <ul class="flow-notes" id="flow-note"></ul>
+        </div>
         <div class="bg-white rounded-xl shadow-card p-6 border border-gray-200">
           <div class="flex items-center mb-6">
             <svg class="w-5 h-5 mr-2 text-dawiyat-vibrant" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -803,29 +826,6 @@ window.addEventListener('load', function() {
         </div>
       </div>
 
-      <!-- Inflow vs Delivery (target orders per week) -->
-      <div class="bg-white rounded-xl shadow-card p-6 border border-gray-200 mb-8 overflow-hidden" id="flow-card">
-        <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-1">
-          <div>
-            <h3 class="text-lg font-bold text-gray-900" id="flow-title">Inflow vs Delivery — All classes</h3>
-          </div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <div class="fx-seg" id="flow-mode"><button data-f="inflow">Inflow</button><button data-f="delivery">Delivery</button><button data-f="both" class="on">Both</button></div>
-            <div class="fx-seg" id="flow-class"><button data-c="Total" class="on">All</button><button data-c="A">Class A</button><button data-c="B">Class B</button><button data-c="C">Class C</button></div>
-            <div class="fx-seg" id="flow-act"><button data-a="all" class="on" title="Every created and delivered order">All orders</button><button data-a="excl" title="Remove the activation orders listed in the FCS Activation file on OneDrive">Excl. activation</button></div>
-            <div class="fx-seg" id="flow-scale"><button data-s="clip" class="on" title="Keeps the chart readable when one week is far higher than the rest">Clip spikes</button><button data-s="full">Full</button></div>
-            <div class="flex items-center bg-gray-100 rounded-lg p-0.5" id="flow-period">
-              <button data-period="4" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">4W</button>
-              <button data-period="8" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">8W</button>
-              <button data-period="12" class="flow-period-btn period-active text-xs font-bold px-3 py-1.5 rounded-md">12W</button>
-              <button data-period="all" class="flow-period-btn text-xs font-bold px-3 py-1.5 rounded-md">All</button>
-            </div>
-          </div>
-        </div>
-        <div class="fx-tiles" id="flow-tiles"></div>
-        <div class="relative h-80 w-full"><canvas id="flowChart"></canvas></div>
-        <ul class="flow-notes" id="flow-note"></ul>
-      </div>
     </div>
 
     <footer class="text-center text-xs font-medium text-gray-400 py-2">
@@ -2321,7 +2321,6 @@ async function renderCompliancePanel() {
     try { updateComplianceChart(applyCompliancePeriod(merged)); } catch (e) { console.error('Compliance chart failed to render:', e); }
   }));
 
-  try { renderFlowChart(); } catch (e) { console.error('Inflow/Delivery chart failed:', e); }
 }
 
 function regenerateComplianceInsights() {
@@ -3361,7 +3360,7 @@ function rmList(D, M) {
 
 
 /* ============================================================
-   INFLOW vs DELIVERY — target orders per week (Compliance tab)
+   INFLOW vs DELIVERY — target orders per week (All classes tab, under Created vs Completed)
    Inflow   = target orders created in the week
    Delivery = target orders completed in the week
    The week that contains the file date is still running and is drawn dashed.
@@ -3403,7 +3402,7 @@ async function loadActivation(forceFresh) {
     ACT.status = 'error'; ACT.error = e.message; ACT.ids = new Set(); ACT.rows = 0;
     console.warn('Activation file not available:', e.message);
   }
-  try { if (currentTab === 'Compliance') renderFlowChart(); else flowActButtons(); } catch (e) { /* chart not drawn yet */ }
+  try { if (currentTab === 'Total') renderFlowChart(); else flowActButtons(); } catch (e) { /* chart not drawn yet */ }
 }
 function flowActButtons() {
   const ex = document.querySelector('#flow-act button[data-a="excl"]'); if (!ex) return;
@@ -3565,6 +3564,9 @@ function renderCharts(data, animate) {
   if (!gapChart) initCharts();
   updateCharts(data, animate);
   try { renderPeriodAnalysis(); } catch (e) { console.error('Period analysis failed:', e); }
+  // Inflow vs Delivery sits under "Created vs Completed" on the All classes tab only
+  document.getElementById('flow-card').classList.toggle('hidden', currentTab !== 'Total');
+  if (currentTab === 'Total') { try { renderFlowChart(); } catch (e) { console.error('Inflow/Delivery chart failed:', e); } }
 }
 
 function hasActiveFilters() {
@@ -4130,7 +4132,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }));
   document.getElementById('pf-clear').addEventListener('click', () => pfApply(null, null, 'all'));
 
-  // ---- Inflow vs Delivery (Compliance tab) ----
+  // ---- Inflow vs Delivery (All classes tab) ----
   // ---- Header tabs: on narrow screens show a › hint while more tabs are hidden to the right
   const segW = document.getElementById('tb-segw'), seg = segW && segW.querySelector('.tb-seg');
   const tabHint = () => { if (seg) segW.classList.toggle('more', seg.scrollLeft + seg.clientWidth < seg.scrollWidth - 4); };
